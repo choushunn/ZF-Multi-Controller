@@ -162,4 +162,8 @@ Multi-Controller/
 
 ## 更新日志
 
-详见[CHANGELOG.md](CHANGELOG.md)
+详见[CHANGELOG.md](docs/CHANGELOG.md)
+
+## 依赖项
+
+详见[DEPENDENCIES.md](docs/DEPENDENCIES.md)
