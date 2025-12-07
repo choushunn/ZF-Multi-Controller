@@ -116,8 +116,8 @@ Multi-Controller/
 
 ### 依赖库
 - Qt6 Widgets模块
-- Thorlabs KDC101运动控制库
-- DVP2相机控制库
+- Thorlabs KDC101运动控制库 [KDC101 SDK](https://www.thorlabs.com/software_pages/ViewSoftwarePage.cfm?Code=Motion_Control&viewtab=0)
+- DVP2相机控制库[DVP2 SDK](https://cdhbuy.oss-cn-beijing.aliyuncs.com/Public/statics/files/SDK%E4%BA%8C%E6%AC%A1%E5%BC%80%E5%8F%91%E5%8C%85.rar)
 
 ### 编译器要求
 - C++17标准支持
