@@ -1,0 +1,76 @@
+# Multi-Controller 配置文件模板
+# 复制此文件为 config.ini 并根据需要修改设置
+
+[General]
+# 应用程序设置
+app_name=Multi-Controller
+app_version=0.1
+language=zh_CN
+theme=default
+
+[Motor]
+# 电机控制器设置
+# 位置单位：微米 (μm)
+# 速度单位：微米/秒 (μm/s)
+# 加速度单位：微米/平方秒 (μm/s²)
+
+# 默认位置范围
+min_position_mm=0.005
+max_position_mm=24.5
+
+# 默认速度参数
+default_velocity=2600
+default_acceleration=4000
+
+# 点动设置
+default_jog_step=100
+
+# 设备连接设置
+auto_connect_on_startup=false
+auto_refresh_devices=true
+polling_interval_ms=200
+
+[Camera]
+# 相机设置
+# 图像保存路径
+default_save_path=./images
+
+# 默认图像格式
+default_image_format=png
+
+# 图像质量设置 (0-100)
+jpeg_quality=95
+
+# 预览设置
+preview_fps=30
+auto_adjust_exposure=true
+
+[UI]
+# 用户界面设置
+# 窗口设置
+remember_window_size=true
+remember_window_position=true
+default_window_width=1200
+default_window_height=700
+
+# 日志设置
+log_max_lines=1000
+log_auto_scroll=true
+log_timestamp_format=yyyy-MM-dd hh:mm:ss
+
+# 状态更新间隔（毫秒）
+status_update_interval=500
+
+[Advanced]
+# 高级设置
+# 调试模式
+debug_mode=false
+verbose_logging=false
+
+# 性能设置
+enable_hardware_acceleration=true
+max_thread_count=4
+
+# 错误处理
+auto_retry_on_failure=true
+max_retry_attempts=3

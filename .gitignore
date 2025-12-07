@@ -134,3 +134,19 @@ node_modules/
 
 # Keep CMakeLists.txt files but ignore their build artifacts
 !CMakeLists.txt
+
+# Configuration files (keep template but ignore user-specific configs)
+config.ini
+!config.ini.template
+
+# User data and output
+images/
+output/
+data/
+*.dat
+*.csv
+
+# Application-specific files
+*.settings
+*.session
+*.state
