@@ -126,9 +126,7 @@ Thumbs.db
 node_modules/
 
 # 3rd party binaries that shouldn't be in version control
-3rdparty/**/*.dll
 3rdparty/**/*.exe
-3rdparty/**/*.lib
 3rdparty/**/*.so
 3rdparty/**/*.dylib
 
