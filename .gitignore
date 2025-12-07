@@ -1,0 +1,136 @@
+# Build directories
+build/
+debug/
+release/
+*/build/
+*/debug/
+*/release/
+
+# Qt specific
+*.pro.user*
+*.qbs.user*
+*.moc
+*.moc.*
+*.qrc.cpp
+*.ui.*
+*.qmlc
+*.jsc
+Makefile*
+*-build-*
+
+# Qt Creator
+*.pro.user*
+*.qbs.user*
+*.moc
+*.moc.*
+*.qrc.cpp
+*.ui.*
+*.qmlc
+*.jsc
+Makefile*
+*-build-*
+
+# Qt translations
+*.qm
+*.ts
+
+# Qt unit tests
+target_wrapper.*
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# Visual Studio
+.vs/
+*.vcxproj*
+*.sln
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# Compiled binaries
+*.exe
+*.dll
+*.lib
+*.so
+*.dylib
+*.a
+*.o
+*.obj
+*.ilk
+*.pdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp_proj
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# Debug files
+*.exp
+*.tlog
+*.vspx
+*.pch
+*.pdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+
+# IDE specific files
+*.autosave
+*.swp
+*~
+\.#*
+\#*#
+.*.swp
+.*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Dependency directories
+node_modules/
+
+# 3rd party binaries that shouldn't be in version control
+3rdparty/**/*.dll
+3rdparty/**/*.exe
+3rdparty/**/*.lib
+3rdparty/**/*.so
+3rdparty/**/*.dylib
+
+# Keep CMakeLists.txt files but ignore their build artifacts
+!CMakeLists.txt

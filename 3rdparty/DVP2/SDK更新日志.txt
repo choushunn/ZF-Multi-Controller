@@ -1,0 +1,123 @@
+【DVP2 SDK CN V2.0.0 目录对应关系】
+- library					#各编成语言引用库和头文件
+	- DVP API更新日志.txt 	#API更新日志
+	- Visual C++
+		- include			#头文件
+		- lib				
+			- x64			#64位静态库
+			- x86			#32位静态库
+		- bin 
+			- x64			#64位动态库
+			- x86			#32位动态库
+	- Visual C#		
+		- x64				#64位库
+		- x86				#32位库
+- Sample
+	- C++ Console Application
+		- Dvp2EventCallback					#注册事件回调函数
+		- Dvp2Getframe						#同步方式采集及触发模式
+		- Dvp2StreamCallback				#回调方式采集
+		- Dvp2VideoRecord					#录制视频wmv、avi
+		- CppConsole_2013.sln
+		- CppConsole_2015.sln
+		- CppConsole_2017.sln
+		- CppConsole_2019.sln
+	- OpenCV								#使用Dvp2结合OpenCV的使用
+			- Dvp2OpenCV2017.vcxproj		#由于OpenCV库是vc15编译版本的原因，所以目前只能在VS2017和VS2019上运行
+			- Dvp2OpenCV2019.vcxproj		
+	- VC++
+		- BasicFunction							#自动曝光、曝光时间、模拟增益、消频闪、分辨率切换、视频流回调函数
+		- ImageAcquisition						#采集线程、图像保存、软触发、定时采集、采集同步
+		- MultipleCamera						#多相机、用户命名(User ID)、相机名称绑定
+		- Trigger								#软触发、外部触发、循环触发、Strobe信号
+		- Trigger2
+		- Samples2010.sln
+		- Samples2013.sln
+		- Samples2015.sln
+		- Samples2017.sln
+		- Samples2019.sln
+	- VB.NET
+		- BasicFunction
+		- ImageAcquisition
+		- MultipleCamera
+		- Trigger
+		- vs2019_Samples.sln
+	- VC#
+		- BasicFunction
+		- ImageAcquisition
+		- MultipleCamera
+		- Trigger
+		- Trigger2
+		- vs2019_Samples.sln
+	- QT 
+		- QtBasedFunction			#Qt跨平台案例
+			- lib_linux_arm32		#以arm32作为cpu的平台库目录，比如树莓派等
+			- lib_linux_arm64		#以arm64作为cpu的平台库目录，比如nvidia 开发板，rk3399等
+			- lib_linux_x86_32      #以intel作为cpu的linux平台库目录，比如电脑里装的32位虚拟机等
+			- lib_linux_x86_64      #以intel作为cpu的linux平台库目录，比如电脑里装的64位虚拟机等
+			- lib_x86_32            #以intel作为cpu的windows平台库目录
+			- lib_x86_64            #以intel作为cpu的windows平台库目录
+	- Python						#目前只支持3.6
+		- Py36 Demo
+		- lib
+			- windows
+			- linux
+	- Halcon
+		- Halcon_Sample
+	- LabView
+		- Labview_9.0_Sample
+- SDK更新日志.txt
+
+【更新日志】
+- 2020-09-03 V2.0 
+1、更新DVP2 API开发手册.chm文档，优化chm界面，在chm文档中添加示例代码，对API的解释更为详细
+2、添加控制台案例
+	- Dvp2Getframe 同步采集案例
+	- Dvp2OpenCV 结合OpenCV使用度申相机
+	- Dvp2StreamCallback 回调函数采集案例
+3、修改VC++、C#、VB.NET案例，适配VS各版本
+4、添加Qt跨平台案例
+	- QtBasicFunction，采集线程、图像保存、软触发、自动曝光、曝光时间、模拟增益、消频闪、分辨率切换、采集同步
+5、添加Python案例
+	- demo目前只支持python3.6版本，其他版本后续会支持
+
+- 2020-09-08 V2.0 
+1、修改C#案例设置User ID问题
+2、添加Halcon案例
+3、修改LabView转接口
+
+- 2020-09-010 V2.0 
+1、更新SDK C# dll库
+
+- 2020-09-15 V2.0 
+1、添加Dvp2LabView案例
+2、添加Dvp2Halcon案例
+3、QtBasedFunction需要修改线程采图及转换那一块的代码
+	- 问题1：不支持mono格式显示
+
+- 2020-09-23 V2.0 
+1、修改Dvp2StreamCallback，通过控制台输入ESC停止线程采集
+2、修改LabView、Halcon案例代码，Halcon案例需要安装Halcon主程序，建议安装Halcon12及以上版本
+3、修改QtBasedFunction初始化相机目标格式统一为BGR24，暂不支持目标格式为MONO、RAW图像格式的显示
+
+- 2020-09-14 V2.0.0.1 
+1、增加Dvp2EventCallback事件回调案例
+2、修改OpenCV案例
+3、修改Halcon案例
+
+- 2020-09-28 V2.0.0.2
+1、添加Dvp2VideoRecord录制视频案例
+2、添加C#外触发案例Trigger2
+3、为Dvp2_Sample_MFC添加vs2010工程文件，修改Dvp2_Sample_MFC中ASCII与UNICODE相互转换方法
+4、修复QtBasedFunction触发使能按钮失效问题
+5、添加创建快捷方式
+
+- 2020-09-29 V2.0.0.3
+1、修改UI界面
+2、修复快捷方式创建失效问题
+
+
+
+
+
+

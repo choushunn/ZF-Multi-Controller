@@ -1,0 +1,30 @@
+# DVP2 SDK CMakeLists.txt
+
+# 设置DVP2 SDK的根目录
+set(DVP2_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+# 设置包含目录
+set(DVP2_INCLUDE_DIRS ${DVP2_ROOT_DIR}/include)
+
+# 设置库目录
+set(DVP2_LIBRARY_DIRS ${DVP2_ROOT_DIR}/lib/x64)
+
+# 设置二进制目录（DLL）
+set(DVP2_BINARY_DIRS ${DVP2_ROOT_DIR}/bin/x64)
+
+# 创建DVP2库目标
+add_library(DVPCamera64 STATIC IMPORTED GLOBAL)
+
+# 设置库文件路径
+set_target_properties(DVPCamera64 PROPERTIES
+    IMPORTED_LOCATION "${DVP2_LIBRARY_DIRS}/DVPCamera64.lib"
+    INTERFACE_INCLUDE_DIRECTORIES "${DVP2_INCLUDE_DIRS}"
+)
+
+# 添加DLL路径到运行时路径
+target_link_directories(DVPCamera64 INTERFACE ${DVP2_BINARY_DIRS})
+
+# 导出变量供父CMakeLists.txt使用
+set(DVP2_FOUND TRUE PARENT_SCOPE)
+set(DVP2_INCLUDE_DIRS ${DVP2_INCLUDE_DIRS} PARENT_SCOPE)
+set(DVP2_LIBRARIES DVPCamera64 PARENT_SCOPE)
