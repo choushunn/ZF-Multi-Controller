@@ -7,6 +7,10 @@
 #include "core/appconfig.h"
 #include "core/logger.h"
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
+
 namespace {
 void logLine(const QString &message)
 {
@@ -18,6 +22,12 @@ void logLine(const QString &message)
 // 用于脚本化 / 自动化的电机控制与状态查询。
 int main(int argc, char *argv[])
 {
+#ifdef Q_OS_WIN
+    // 帮助/版本文本改为自行输出（见下），这里仅把控制台输出代码页切到 UTF-8，
+    // 保证 GBK 控制台（如 cmd）下 UTF-8 字节能正确显示。
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName(QStringLiteral("Multi-ControllerCLI"));
     QCoreApplication::setApplicationVersion(QStringLiteral("0.1.0"));
@@ -67,6 +77,21 @@ int main(int argc, char *argv[])
     parser.addOption(statusOpt);
     parser.addOption(velocityOpt);
     parser.addOption(accelerationOpt);
+
+    // Qt 的 showHelp/showVersion 经 toLocal8Bit 输出，GBK 控制台会乱码；
+    // 这里先用 UTF-8 的 QTextStream 自行输出并退出，绕过该路径。
+    const QStringList rawArgs = app.arguments();
+    if (rawArgs.contains(QStringLiteral("--help")) || rawArgs.contains(QStringLiteral("-h"))
+        || rawArgs.contains(QStringLiteral("--help-all"))) {
+        logLine(parser.helpText());
+        return 0;
+    }
+    if (rawArgs.contains(QStringLiteral("--version")) || rawArgs.contains(QStringLiteral("-v"))) {
+        logLine(QStringLiteral("%1 %2").arg(QCoreApplication::applicationName(),
+                                            QCoreApplication::applicationVersion()));
+        return 0;
+    }
+
     parser.process(app);
 
     // 用配置参数构造电机

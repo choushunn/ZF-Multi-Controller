@@ -28,7 +28,7 @@
 
 ### 方向四：Agent CLI 程序　【已完成并验证】
 
-已新增 `Multi-ControllerCLI` 可执行目标（[src/cli/main.cpp](file:///d:/CPP/Multi-Controller-Source/src/cli/main.cpp)），用 Qt 的 QCommandLineParser 实现参数解析，与 GUI 共用 `mc_core`。支持 --list、--serial、--home、--stop、-m/--move、-r/--relative、--status、--velocity/--acceleration，2026-09 已通过 MSVC Release 构建与运行时验证（--help/--list 正常输出，日志落盘）。用于无人值守、脚本化、自动化电机控制；CLI 参数解析将纳入后续测试体系（见方向七）。遗留：控制台输出中文存在编码乱码（UTF-8 源码 × GBK 控制台），列入方向七处理。
+已新增 `Multi-ControllerCLI` 可执行目标（[src/cli/main.cpp](file:///d:/CPP/Multi-Controller-Source/src/cli/main.cpp)），用 Qt 的 QCommandLineParser 实现参数解析，与 GUI 共用 `mc_core`。支持 --list、--serial、--home、--stop、-m/--move、-r/--relative、--status、--velocity/--acceleration，2026-09 已通过 MSVC Release 构建与运行时验证（--help/--list 正常输出，日志落盘）。用于无人值守、脚本化、自动化电机控制；CLI 参数解析将纳入后续测试体系（见方向七）。控制台中文乱码已修复（拦截 Qt showHelp 的 toLocal8Bit 输出，改用 UTF-8 QTextStream 自行输出 + SetConsoleOutputCP(65001)）。
 
 ### 方向五：系统架构分层　【已完成并验证】
 
@@ -150,8 +150,8 @@
 
 按本文档门禁在本机环境（Qt 6.10.1 at C:/Programs/Qt，Qt 自带 MinGW 13.1.0，VS 2026）实测，结果如下。
 
-双工具链 configure 与 build 全部通过。MinGW（MC_ENABLE_HARDWARE=OFF）产出 mc_core 与 3 个测试 exe；MSVC（Visual Studio 18 2026 生成器，Release）产出 Multi-Controller.exe、Multi-ControllerCLI.exe、测试 exe 及 installer-staging（windeployqt 已在构建期跑通）。厂商 DLL（DVPCamera64.dll、Thorlabs.MotionControl.*.dll、toupcam.dll）均经 POST_BUILD 自动拷贝至输出目录，无缺失、无孤儿 DLL。ctest 在 MinGW 与 MSVC 两条路径均为 3/3 通过（motorstatus/motorconfig/appconfig）。CLI 实测：--help 与 --list 正常输出，日志分级与文件持久化落地（Release/logs/multi-controller_2026-09-26.log）；发现控制台中文输出存在编码乱码（UTF-8 源码 × GBK 控制台），列入方向七。
+双工具链 configure 与 build 全部通过。MinGW（MC_ENABLE_HARDWARE=OFF）产出 mc_core 与 3 个测试 exe；MSVC（Visual Studio 18 2026 生成器，Release）产出 Multi-Controller.exe、Multi-ControllerCLI.exe、测试 exe 及 installer-staging（windeployqt 已在构建期跑通）。厂商 DLL（DVPCamera64.dll、Thorlabs.MotionControl.*.dll、toupcam.dll）均经 POST_BUILD 自动拷贝至输出目录，无缺失、无孤儿 DLL。ctest 在 MinGW 与 MSVC 两条路径均为 3/3 通过（motorstatus/motorconfig/appconfig）。CLI 实测：--help 与 --list 正常输出，日志分级与文件持久化落地（Release/logs/multi-controller_2026-09-26.log）。发现控制台中文乱码：根因是 Qt showHelp 经 toLocal8Bit 输出 GBK 字节而日志走 UTF-8，混排乱码；已修复（CLI 自行为 --help/--version 输出 UTF-8 文本并设置控制台代码页 65001，实测 -h/--version/--list 中文显示正常）。
 
 验证暴露并修复一处真实缺陷：MinGW 构建 test_motorconfig 链接失败（devicePositionToUm 定义位于硬件层 kcubemotor.cpp，硬件关闭时不可见），已将其下沉为 MotorConfig 静态方法，MinGW 与 MSVC 均回归通过。另修正 CMakePresets 的过时配置：Qt 路径由 6.7.3/C:/Qt 改为 6.10.1/C:/Programs/Qt，并修正 MinGW 范围描述（CLI 由 MC_ENABLE_HARDWARE 门控，MinGW 不产出 CLI）。
 
-仍未完成、需后续处理的事项：CI 需在 GitHub Actions 远端实测；NSIS 安装包需在干净环境生成并安装/卸载验证；TOUPCam 需连接真实相机实测采帧与实时画面；CLI 参数解析尚无单元测试；控制台中文乱码待修复。
+仍未完成、需后续处理的事项：CI 需在 GitHub Actions 远端实测；NSIS 安装包需在干净环境生成并安装/卸载验证；TOUPCam 需连接真实相机实测采帧与实时画面；CLI 参数解析尚无单元测试。
