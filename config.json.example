@@ -1,0 +1,20 @@
+{
+    "motor": {
+        "defaultSerial": "",
+        "positionToUm": 0.029,
+        "minPositionMm": 0.005,
+        "maxPositionMm": 24.5,
+        "defaultMaxVelocity": 2600,
+        "defaultAcceleration": 4000
+    },
+    "log": {
+        "dir": "logs",
+        "level": "info",
+        "maxFileSize": 5242880
+    },
+    "camera": {
+        "userId": "",
+        "imageSaveDir": "images"
+    },
+    "language": "zh_CN"
+}

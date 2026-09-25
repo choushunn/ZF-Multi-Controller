@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-msvc:
+    name: Build (MSVC + Qt6)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Qt6 (MSVC 2022 x64)
+        id: qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.10.1'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2022_64'
+          cache: true
+
+      - name: Configure (MSVC, VS 2022 x64)
+        shell: pwsh
+        run: |
+          cmake -B build -S . `
+            -G "Visual Studio 17 2022" -A x64 `
+            -DCMAKE_PREFIX_PATH="${{ steps.qt.outputs.dir }}"
+
+      - name: Build (Release)
+        shell: pwsh
+        run: cmake --build build --config Release --parallel
+
+      - name: Test (ctest, Release)
+        shell: pwsh
+        run: ctest --test-dir build --build-config Release --output-on-failure
+
+      - name: Upload MSVC artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: msvc-release
+          path: build/Release/
+          if-no-files-found: error
+
+  build-mingw:
+    name: Build (MinGW, no hardware)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2 (MINGW64)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            git
+            make
+
+      - name: Install MinGW toolchain and Qt6
+        run: |
+          pacman -S --noconfirm --needed \
+            mingw-w64-x86_64-gcc \
+            mingw-w64-x86_64-cmake \
+            mingw-w64-x86_64-ninja \
+            mingw-w64-x86_64-qt6-base
+
+      - name: Configure (MinGW, MC_ENABLE_HARDWARE=OFF)
+        run: |
+          cmake -B build -S . \
+            -G "Ninja" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DMC_ENABLE_HARDWARE=OFF
+
+      - name: Build (core + tests, no hardware)
+        run: cmake --build build --parallel
+
+      - name: Test (ctest)
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Upload MinGW artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mingw-build
+          path: |
+            build/*.exe
+            build/*.dll
+          if-no-files-found: ignore

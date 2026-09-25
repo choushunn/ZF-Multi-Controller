@@ -1,0 +1,364 @@
+#include "mainwindow.h"
+#include "./ui_mainwindow.h"
+
+#include <QMessageBox>
+#include <QDateTime>
+#include <QFileDialog>
+#include <QPixmap>
+#include <QImage>
+#include <QDir>
+#include <QStandardPaths>
+
+#include "core/kcubemotor.h"
+#include "core/appconfig.h"
+#include "core/logger.h"
+#include "core/icamera.h"
+
+#if MC_HAS_HARDWARE
+#include "core/toup_camera.h"
+#endif
+#if MC_HAS_SIM_CAMERA
+#include "core/sim_camera.h"
+#endif
+
+using mc::AppConfig;
+using mc::Logger;
+using mc::LogLevel;
+using mc::MotorConfig;
+
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+    , statusTimer(new QTimer(this))
+    , motor(new KCubeMotor(this))
+    , camera(nullptr)
+{
+    ui->setupUi(this);
+
+    // 从配置注入电机参数
+    applyConfig();
+
+    // 初始化相机：优先 DVP2，无硬件时用仿真相机
+#if MC_HAS_HARDWARE
+    // 现场相机为 ToupTek（VID_0547），不能用 DVP2 SDK 枚举。
+    camera = new ToupCamera(this);
+#elif MC_HAS_SIM_CAMERA
+    camera = new mc::SimCamera(this);
+#else
+    camera = nullptr;
+#endif
+
+    // 连接电机信号
+    connect(statusTimer, &QTimer::timeout, this, &MainWindow::updateDeviceStatus);
+    connect(motor, &KCubeMotor::logMessage, this, &MainWindow::onMotorLog);
+    connect(motor, &KCubeMotor::connectedChanged, this, &MainWindow::onConnectedChanged);
+
+    // 连接 Logger 信号（分级日志输出到 UI）
+    connect(&Logger::instance(), &Logger::message, this,
+        [this](LogLevel level, const QString &formatted) {
+            // 级别着色
+            QString color = QStringLiteral("black");
+            switch (level) {
+            case LogLevel::Debug: color = QStringLiteral("gray"); break;
+            case LogLevel::Info:  color = QStringLiteral("black"); break;
+            case LogLevel::Warn:  color = QStringLiteral("#cc7a00"); break;
+            case LogLevel::Error: color = QStringLiteral("red"); break;
+            }
+            const QString html = QStringLiteral("<span style='color:%1'>%2</span>")
+                .arg(color).arg(formatted.toHtmlEscaped());
+            ui->logTextEdit->appendHtml(html);
+        });
+
+    // 连接相机信号
+    if (camera) {
+        connect(ui->cameraConnectBtn, &QPushButton::clicked,
+                this, &MainWindow::onCameraConnectBtnClicked);
+        connect(ui->captureBtn, &QPushButton::clicked,
+                this, &MainWindow::onCaptureBtnClicked);
+        connect(ui->saveImageBtn, &QPushButton::clicked,
+                this, &MainWindow::onSaveImageBtnClicked);
+
+        connect(camera, &mc::ICamera::frameReady,
+                this, &MainWindow::onCameraFrameReady);
+        connect(camera, &mc::ICamera::connectedChanged,
+                this, &MainWindow::onCameraConnectedChanged);
+        connect(camera, &mc::ICamera::logMessage,
+                this, &MainWindow::onCameraLog);
+    }
+
+    // 设置位置输入范围（微米），从配置读取
+    const auto &cfg = AppConfig::instance().data();
+    const double minPositionUm = cfg.minPositionMm * 1000;
+    const double maxPositionUm = cfg.maxPositionMm * 1000;
+    ui->positionSpinBox->setRange(minPositionUm, maxPositionUm);
+    ui->positionSpinBox->setSuffix(" μm");
+    ui->jogStepSpinBox->setRange(0.1, maxPositionUm);
+    ui->jogStepSpinBox->setSuffix(" μm");
+    ui->velocitySpinBox->setValue(cfg.defaultMaxVelocity);
+    ui->accelerationSpinBox->setValue(cfg.defaultAcceleration);
+
+    onMotorLog(QStringLiteral("应用程序已启动"));
+
+    // 自动刷新设备列表
+    refreshDeviceList();
+    refreshCameraList();
+}
+
+MainWindow::~MainWindow()
+{
+    saveConfig();
+    delete ui;
+}
+
+void MainWindow::applyConfig()
+{
+    const auto &cfg = AppConfig::instance().data();
+    motor->setConfig(MotorConfig(cfg.positionToUm, cfg.minPositionMm,
+                                 cfg.maxPositionMm, cfg.defaultMaxVelocity,
+                                 cfg.defaultAcceleration));
+}
+
+void MainWindow::saveConfig()
+{
+    auto &appCfg = AppConfig::instance();
+    // 如果已连接设备，记录其序列号作为默认
+    if (motor->isConnected())
+        appCfg.setDefaultSerial(motor->serialNumber());
+    appCfg.save();
+}
+
+void MainWindow::on_connectBtn_clicked()
+{
+    if (!motor->isConnected()) {
+        const QString serialNo = ui->serialNoComboBox->currentText().trimmed();
+        if (serialNo.isEmpty()) {
+            QMessageBox::warning(this, QStringLiteral("警告"), QStringLiteral("请选择设备序列号"));
+            return;
+        }
+
+        if (motor->connectTo(serialNo)) {
+            onMotorLog(QStringLiteral("成功连接到设备: %1").arg(serialNo));
+
+            // 读取当前速度/加速度，并转换为实际物理单位显示
+            double currentVelocity = motor->velocityUmps();
+            double currentAcceleration = motor->accelerationUmps2();
+            if (currentVelocity > 0)
+                ui->velocitySpinBox->setValue(currentVelocity);
+            if (currentAcceleration > 0)
+                ui->accelerationSpinBox->setValue(currentAcceleration);
+
+            statusTimer->start(500); // 每 500ms 更新一次状态
+        } else {
+            QMessageBox::critical(this, QStringLiteral("错误"),
+                                  QStringLiteral("无法连接到设备，请检查序列号是否正确"));
+            onMotorLog(QStringLiteral("连接设备失败: %1").arg(serialNo));
+        }
+    } else {
+        motor->disconnect();
+        statusTimer->stop();
+    }
+}
+
+void MainWindow::on_refreshBtn_clicked()
+{
+    refreshDeviceList();
+}
+
+void MainWindow::on_homeBtn_clicked()
+{
+    motor->home();
+}
+
+void MainWindow::on_stopBtn_clicked()
+{
+    motor->stop();
+}
+
+void MainWindow::on_moveBtn_clicked()
+{
+    motor->moveToUm(ui->positionSpinBox->value());
+}
+
+void MainWindow::on_setVelocityBtn_clicked()
+{
+    motor->setVelocity(ui->velocitySpinBox->value(), ui->accelerationSpinBox->value());
+}
+
+void MainWindow::on_jogForwardBtn_clicked()
+{
+    motor->moveRelativeUm(+ui->jogStepSpinBox->value());
+}
+
+void MainWindow::on_jogBackwardBtn_clicked()
+{
+    motor->moveRelativeUm(-ui->jogStepSpinBox->value());
+}
+
+void MainWindow::updateDeviceStatus()
+{
+    if (!motor->isConnected())
+        return;
+
+    ui->positionLabel->setText(QStringLiteral("%1").arg(motor->positionUm(), 0, 'f', 1));
+
+    static QString lastStatusInfo;
+    const QString info = motor->status().describe();
+    if (info != lastStatusInfo) {
+        onMotorLog(info);
+        lastStatusInfo = info;
+    }
+}
+
+void MainWindow::onMotorLog(const QString &message)
+{
+    const QString timestamp =
+        QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd hh:mm:ss"));
+    const QString formatted = QStringLiteral("[%1] %2").arg(timestamp, message);
+    ui->logTextEdit->appendPlainText(formatted);
+    // 同时写入 Logger（会分级落盘）
+    Logger::instance().info(message);
+}
+
+void MainWindow::onConnectedChanged(bool connected)
+{
+    ui->connectionStatusLabel->setText(connected ? QStringLiteral("已连接") : QStringLiteral("未连接"));
+    ui->connectBtn->setText(connected ? QStringLiteral("断开") : QStringLiteral("连接"));
+    enableControls(connected);
+}
+
+void MainWindow::enableControls(bool enabled)
+{
+    ui->homeBtn->setEnabled(enabled);
+    ui->stopBtn->setEnabled(enabled);
+    ui->moveBtn->setEnabled(enabled);
+    ui->positionSpinBox->setEnabled(enabled);
+    ui->velocitySpinBox->setEnabled(enabled);
+    ui->accelerationSpinBox->setEnabled(enabled);
+    ui->setVelocityBtn->setEnabled(enabled);
+    ui->jogForwardBtn->setEnabled(enabled);
+    ui->jogBackwardBtn->setEnabled(enabled);
+    ui->jogStepSpinBox->setEnabled(enabled);
+    ui->serialNoComboBox->setEnabled(!enabled);
+}
+
+void MainWindow::enableCameraControls(bool enabled)
+{
+    ui->captureBtn->setEnabled(enabled);
+    ui->saveImageBtn->setEnabled(enabled);
+    ui->cameraConnectBtn->setText(enabled ? QStringLiteral("断开相机") : QStringLiteral("连接相机"));
+}
+
+void MainWindow::refreshDeviceList()
+{
+    const QStringList devices = motor->availableDevices();
+
+    const QString current = ui->serialNoComboBox->currentText();
+    ui->serialNoComboBox->clear();
+
+    if (devices.isEmpty()) {
+        onMotorLog(QStringLiteral("未发现任何设备"));
+        QMessageBox::information(this, QStringLiteral("信息"), QStringLiteral("未发现任何KDC101设备"));
+        return;
+    }
+
+    onMotorLog(QStringLiteral("发现 %1 个设备").arg(devices.size()));
+    for (int i = 0; i < devices.size(); ++i)
+        ui->serialNoComboBox->addItem(devices[i]);
+
+    // 优先选择配置中的默认设备，其次保留原有选择，否则选第一个
+    const QString &defaultSerial = AppConfig::instance().defaultSerial();
+    int idx = ui->serialNoComboBox->findText(defaultSerial);
+    if (idx < 0) idx = ui->serialNoComboBox->findText(current);
+    ui->serialNoComboBox->setCurrentIndex(idx >= 0 ? idx : 0);
+}
+
+void MainWindow::refreshCameraList()
+{
+    if (!camera)
+        return;
+
+    const QStringList cams = camera->availableCameras();
+    if (cams.isEmpty())
+        onMotorLog(QStringLiteral("未发现相机设备"));
+    else
+        onMotorLog(QStringLiteral("发现 %1 个相机").arg(cams.size()));
+}
+
+void MainWindow::onCameraConnectBtnClicked()
+{
+    if (!camera)
+        return;
+
+    if (!camera->isConnected()) {
+        // 获取可用相机列表并连接第一个
+        const QStringList cams = camera->availableCameras();
+        if (cams.isEmpty()) {
+            QMessageBox::warning(this, QStringLiteral("警告"), QStringLiteral("未发现相机设备"));
+            return;
+        }
+
+        // 优先用配置中的 UserID
+        const QString &cfgUserId = AppConfig::instance().data().cameraUserId;
+        QString id = cams.contains(cfgUserId) ? cfgUserId : cams.first();
+
+        if (!camera->connectTo(id)) {
+            QMessageBox::critical(this, QStringLiteral("错误"),
+                                  QStringLiteral("无法连接到相机: %1").arg(id));
+            return;
+        }
+
+        // 连接成功后启动采集
+        camera->startCapture();
+    } else {
+        camera->disconnect();
+    }
+}
+
+void MainWindow::onCaptureBtnClicked()
+{
+    // frameReady 会自动更新画面，此处仅记录日志
+    onMotorLog(QStringLiteral("捕获图像"));
+}
+
+void MainWindow::onSaveImageBtnClicked()
+{
+    if (!camera)
+        return;
+
+    const QString dir = AppConfig::instance().data().imageSaveDir;
+    const QString defaultPath = QDir(dir).absoluteFilePath(
+        QStringLiteral("capture_%1.png")
+            .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd_hhmmss"))));
+
+    const QString path = QFileDialog::getSaveFileName(
+        this, QStringLiteral("保存图像"), defaultPath,
+        QStringLiteral("PNG 图像 (*.png);;JPEG 图像 (*.jpg)"));
+
+    if (path.isEmpty())
+        return;
+
+    if (camera->saveFrame(path))
+        onMotorLog(QStringLiteral("图像已保存: %1").arg(path));
+    else
+        QMessageBox::warning(this, QStringLiteral("警告"), QStringLiteral("保存图像失败"));
+}
+
+void MainWindow::onCameraFrameReady(const QImage &frame)
+{
+    // 在 label 中显示帧
+    const QPixmap pix = QPixmap::fromImage(frame).scaled(
+        ui->cameraDisplayLabel->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    ui->cameraDisplayLabel->setPixmap(pix);
+    ui->imageInfoLabel->setText(QStringLiteral("图像信息: %1x%2").arg(frame.width()).arg(frame.height()));
+}
+
+void MainWindow::onCameraConnectedChanged(bool connected)
+{
+    ui->cameraStatusLabel->setText(connected ? QStringLiteral("相机状态: 已连接") : QStringLiteral("相机状态: 未连接"));
+    enableCameraControls(connected);
+}
+
+void MainWindow::onCameraLog(const QString &message)
+{
+    onMotorLog(message);
+}
