@@ -133,15 +133,17 @@ Multi-Controller/
 │   │   ├── main.cpp         # 应用程序入口点
 │   │   ├── mainwindow.h/.cpp# 主窗口类
 │   │   └── mainwindow.ui    # 主窗口UI定义
-│   ├── core/                # 硬件抽象与业务逻辑（无GUI依赖）
-│   │   ├── kcubemotor.h/.cpp# KDC101电机控制封装
+│   ├── core/                # 纯逻辑层（无硬件依赖）
 │   │   ├── motorstatus.h/.cpp# 电机状态解析
 │   │   ├── motorconfig.h    # 电机参数配置（运行时可配置）
 │   │   ├── logger.h/.cpp    # 分级日志系统
 │   │   ├── appconfig.h/.cpp # JSON 配置管理
 │   │   ├── icamera.h        # 相机统一接口契约
-│   │   ├── dvp_camera.h/.cpp# DVP2 相机实现
-│   │   └── sim_camera.h     # 仿真相机（测试用）
+│   │   └── hardware/        # 硬件适配层（依赖厂商SDK，仅MSVC构建）
+│   │       ├── kcubemotor.h/.cpp# KDC101电机控制封装
+│   │       ├── dvp_camera.h/.cpp# DVP2 相机实现
+│   │       ├── toup_camera.h/.cpp# ToupCam 相机实现
+│   │       └── sim_camera.h     # 仿真相机（测试用）
 │   ├── cli/                 # 命令行入口（复用core）
 │   │   └── main.cpp
 │   ├── tests/               # 单元测试
