@@ -1,4 +1,4 @@
-#include "core/dvp_camera.h"
+#include "core/hardware/dvp_camera.h"
 #include "core/logger.h"
 
 #include "DVPCamera.h"

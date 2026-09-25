@@ -1,4 +1,4 @@
-#include "core/kcubemotor.h"
+#include "core/hardware/kcubemotor.h"
 #include "core/logger.h"
 
 #include "Thorlabs.MotionControl.KCube.DCServo.h"

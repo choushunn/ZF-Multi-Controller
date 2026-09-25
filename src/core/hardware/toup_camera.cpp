@@ -1,4 +1,4 @@
-#include "core/toup_camera.h"
+#include "core/hardware/toup_camera.h"
 
 #include <QCoreApplication>
 #include <QDir>

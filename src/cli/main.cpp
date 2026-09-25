@@ -3,7 +3,7 @@
 #include <QCommandLineParser>
 #include <QTextStream>
 
-#include "core/kcubemotor.h"
+#include "core/hardware/kcubemotor.h"
 #include "core/appconfig.h"
 #include "core/logger.h"
 

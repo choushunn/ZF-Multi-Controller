@@ -47,12 +47,12 @@ set(MC_CORE_SOURCES
 # 硬件适配层（依赖厂商 SDK，仅 MSVC ABI）
 if(MC_ENABLE_HARDWARE)
     list(APPEND MC_CORE_SOURCES
-        src/core/kcubemotor.cpp
-        src/core/kcubemotor.h
-        src/core/dvp_camera.cpp
-        src/core/dvp_camera.h
-        src/core/toup_camera.cpp
-        src/core/toup_camera.h
+        src/core/hardware/kcubemotor.cpp
+        src/core/hardware/kcubemotor.h
+        src/core/hardware/dvp_camera.cpp
+        src/core/hardware/dvp_camera.h
+        src/core/hardware/toup_camera.cpp
+        src/core/hardware/toup_camera.h
     )
 endif()
 
@@ -83,7 +83,7 @@ if(MC_ENABLE_GUI AND TARGET Qt${QT_VERSION_MAJOR}::Widgets)
     )
 
     if(MC_ENABLE_SIM_CAMERA)
-        list(APPEND PROJECT_SOURCES src/core/sim_camera.h)
+        list(APPEND PROJECT_SOURCES src/core/hardware/sim_camera.h)
     endif()
 
     qt_add_executable(${PROJECT_NAME}

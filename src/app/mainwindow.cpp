@@ -9,16 +9,16 @@
 #include <QDir>
 #include <QStandardPaths>
 
-#include "core/kcubemotor.h"
+#include "core/hardware/kcubemotor.h"
 #include "core/appconfig.h"
 #include "core/logger.h"
 #include "core/icamera.h"
 
 #if MC_HAS_HARDWARE
-#include "core/toup_camera.h"
+#include "core/hardware/toup_camera.h"
 #endif
 #if MC_HAS_SIM_CAMERA
-#include "core/sim_camera.h"
+#include "core/hardware/sim_camera.h"
 #endif
 
 using mc::AppConfig;

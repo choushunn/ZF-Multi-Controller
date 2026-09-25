@@ -1,6 +1,6 @@
 #include <QtTest>
 #include "core/motorconfig.h"
-#include "core/kcubemotor.h"
+#include "core/hardware/kcubemotor.h"
 
 class TestMotorConfig : public QObject {
     Q_OBJECT
