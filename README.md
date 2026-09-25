@@ -162,7 +162,8 @@ Multi-Controller/
 │   └── release.yml          # 发布打包
 ├── 3rdparty/                # 第三方库（仅保留构建必需文件）
 │   ├── KDC101/              # Thorlabs电机控制器库
-│   └── DVP2/                # DVP2相机库
+│   ├── DVP2/                # DVP2相机库
+│   └── ToupTek/             # ToupCam相机SDK
 └── docs/                    # 文档
 ```
 

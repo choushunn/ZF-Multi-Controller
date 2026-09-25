@@ -29,6 +29,7 @@ find_package(Qt${QT_VERSION_MAJOR} OPTIONAL_COMPONENTS Test)
 if(MC_ENABLE_HARDWARE)
     add_subdirectory(3rdparty/KDC101)
     add_subdirectory(3rdparty/DVP2)
+    add_subdirectory(3rdparty/ToupTek)
 endif()
 
 # ---- Core library ----
@@ -61,7 +62,7 @@ target_include_directories(mc_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(mc_core PUBLIC Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui)
 
 if(MC_ENABLE_HARDWARE)
-    target_link_libraries(mc_core PUBLIC KDC101_Components DVPCamera64)
+    target_link_libraries(mc_core PUBLIC KDC101_Components DVPCamera64 ToupCam)
     target_compile_definitions(mc_core PUBLIC MC_HAS_HARDWARE=1)
 else()
     target_compile_definitions(mc_core PUBLIC MC_HAS_HARDWARE=0)
@@ -110,6 +111,9 @@ if(MC_ENABLE_GUI AND TARGET Qt${QT_VERSION_MAJOR}::Widgets)
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${CMAKE_SOURCE_DIR}/3rdparty/DVP2/bin/x64/DVPCamera64.dll"
             "$<TARGET_FILE_DIR:${PROJECT_NAME}>/DVPCamera64.dll"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_SOURCE_DIR}/3rdparty/ToupTek/bin/x64/toupcam.dll"
+            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/toupcam.dll"
             COMMENT "Copying vendor DLLs to GUI output directory"
         )
     endif()

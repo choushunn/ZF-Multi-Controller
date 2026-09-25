@@ -128,6 +128,8 @@ node_modules/
 !3rdparty/KDC101/*.lib
 !3rdparty/DVP2/bin/x64/*.dll
 !3rdparty/DVP2/lib/x64/*.lib
+!3rdparty/ToupTek/bin/x64/*.dll
+!3rdparty/ToupTek/lib/x64/*.lib
 
 # Keep CMakeLists.txt files but ignore their build artifacts
 !CMakeLists.txt
