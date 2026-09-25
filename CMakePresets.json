@@ -9,19 +9,19 @@
     {
       "name": "msvc-base",
       "hidden": true,
-      "description": "MSVC 公共设置：Visual Studio 2022 x64 + Ninja 单配置生成器。需在 VS x64 开发者环境（cl.exe 在 PATH）中运行。",
+      "description": "MSVC 公共设置：Ninja 单配置生成器。需在 VS x64 开发者环境（cl.exe 在 PATH）中运行。",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
-        "CMAKE_PREFIX_PATH": "C:/Qt/6.7.3/msvc2019_64",
+        "CMAKE_PREFIX_PATH": "C:/Programs/Qt/6.10.1/msvc2022_64",
         "CMAKE_C_COMPILER": "cl",
         "CMAKE_CXX_COMPILER": "cl"
       }
     },
     {
       "name": "msvc-debug",
-      "displayName": "MSVC 2022 x64 Debug",
-      "description": "Visual Studio 2022 x64 Debug，完整构建含硬件层（KDC101/DVP2 经 MSVC .lib）。",
+      "displayName": "MSVC x64 Debug",
+      "description": "MSVC x64 Debug，完整构建含硬件层（KDC101/DVP2/ToupTek 经 MSVC .lib）。",
       "inherits": "msvc-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
@@ -29,8 +29,8 @@
     },
     {
       "name": "msvc-release",
-      "displayName": "MSVC 2022 x64 Release",
-      "description": "Visual Studio 2022 x64 Release，完整构建含硬件层。",
+      "displayName": "MSVC x64 Release",
+      "description": "MSVC x64 Release，完整构建含硬件层。",
       "inherits": "msvc-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
@@ -39,11 +39,11 @@
     {
       "name": "mingw-base",
       "hidden": true,
-      "description": "MinGW 公共设置：MinGW Makefiles 生成器 + gcc/g++。禁用硬件层（MC_ENABLE_HARDWARE=OFF），因厂商 SDK 仅提供 MSVC ABI 的 .lib，无 .a。",
+      "description": "MinGW 公共设置：MinGW Makefiles 生成器 + gcc/g++。禁用硬件层（MC_ENABLE_HARDWARE=OFF），因厂商 SDK 仅提供 MSVC ABI 的 .lib，无 .a；CLI 由硬件层门控，MinGW 仅产出 core 与 tests。",
       "generator": "MinGW Makefiles",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
-        "CMAKE_PREFIX_PATH": "C:/Qt/6.7.3/mingw_64",
+        "CMAKE_PREFIX_PATH": "C:/Programs/Qt/6.10.1/mingw_64",
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++",
         "MC_ENABLE_HARDWARE": "OFF"
@@ -52,7 +52,7 @@
     {
       "name": "mingw-debug",
       "displayName": "MinGW g++ Debug (no hardware)",
-      "description": "MinGW g++ Debug，仅编译 core/CLI/tests，硬件层禁用。",
+      "description": "MinGW g++ Debug，仅编译 core/tests，硬件层禁用，CLI 不产出。",
       "inherits": "mingw-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
@@ -61,7 +61,7 @@
     {
       "name": "mingw-release",
       "displayName": "MinGW g++ Release (no hardware)",
-      "description": "MinGW g++ Release，仅编译 core/CLI/tests，硬件层禁用。",
+      "description": "MinGW g++ Release，仅编译 core/tests，硬件层禁用，CLI 不产出。",
       "inherits": "mingw-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"

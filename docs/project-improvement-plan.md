@@ -2,15 +2,15 @@
 
 ## 摘要
 
-本文档既是 Multi-Controller 的改造建议，也是一份按软件系统工程要求组织的工程方案：以需求追踪为主线、以分层架构为核心、以阶段门禁为交付判据，覆盖风险、涉众、交付物与范围边界。目标是让项目从"单文件、硬编码、厂商 SDK 耦合"演进为可维护、可扩展、可交付的工程化上位机软件。截至现状，git 治理、3rdparty 瘦身、core/cli 分层与 CLI 入口已完成，剩余待办集中在日志系统、软件图标、配置与测试、MSYS2、NSIS 打包、TOUPCam 相机接入。建议按「基础治理 → 架构重构 → 工程化增强 → 相机功能」推进，每个方向均可独立落地、独立验证，避免一次性大重构的回归风险。
+本文档既是 Multi-Controller 的改造建议，也是一份按软件系统工程要求组织的工程方案：以需求追踪为主线、以分层架构为核心、以阶段门禁为交付判据，覆盖风险、涉众、交付物与范围边界。目标是让项目从"单文件、硬编码、厂商 SDK 耦合"演进为可维护、可扩展、可交付的工程化上位机软件。截至现状，git 治理、3rdparty 瘦身（含 ToupTek SDK 按惯例入库）、core/hardware 分层、CLI 入口、配置与测试体系均已完成并经双工具链实证（MinGW 与 MSVC 构建通过、ctest 3/3 全绿、CLI 运行正常、厂商 DLL 自动部署）。剩余待办集中在 spdlog 日志基座、NSIS 安装包实测、TOUPCam 硬件实测与 CI 远端验证。建议按「基础治理 → 架构重构 → 工程化增强 → 相机功能」推进，每个方向均可独立落地、独立验证，避免一次性大重构的回归风险。
 
 ## 当前状态快照
 
 技术栈为 Qt6 Widgets + CMake 3.16 + C++17，Windows/MSVC2022 环境构建，已接入 Thorlabs KDC101 电控；DVP2 相机仅为库与 DLL 拷贝，无采图实现。对照已完成工作，当前真实状态如下。
 
-已完成并验证：主窗口源码已迁入 `src/app/`，由约 540 行的单文件拆分为三层。[src/core](file:///d:/CPP/Multi-Controller/src/core) 承载硬件抽象与纯逻辑（[kcubemotor.cpp](file:///d:/CPP/Multi-Controller/src/core/kcubemotor.cpp)、[motorstatus.cpp](file:///d:/CPP/Multi-Controller/src/core/motorstatus.cpp)、[motorconfig.h](file:///d:/CPP/Multi-Controller/src/core/motorconfig.h)），状态掩码已收敛为具名枚举，物理单位换算与限位校验下沉到 core。[src/cli](file:///d:/CPP/Multi-Controller/src/cli) 新增 `Multi-ControllerCLI` 命令行入口，与 GUI 共用 `mc_core`。日志从 UI 坐标解耦至 core 的 logMessage 信号，UI 订阅刷新。3rdparty 已从约 112.8 MB 瘦身至构建必需文件，.gitignore、build 目录忽略、厂商二进制白名单已建立，新克隆开箱可构建。
+已完成并验证：主窗口源码已迁入 `src/app/`，由约 540 行的单文件拆分为三层。[src/core](file:///d:/CPP/Multi-Controller-Source/src/core) 承载纯逻辑（[motorstatus.cpp](file:///d:/CPP/Multi-Controller-Source/src/core/motorstatus.cpp)、[motorconfig.h](file:///d:/CPP/Multi-Controller-Source/src/core/motorconfig.h)），硬件适配层独立为 [src/core/hardware](file:///d:/CPP/Multi-Controller-Source/src/core/hardware)（[kcubemotor.cpp](file:///d:/CPP/Multi-Controller-Source/src/core/hardware/kcubemotor.cpp)、dvp_camera、toup_camera、sim_camera），状态掩码已收敛为具名枚举，物理单位换算与限位校验下沉到 core（devicePositionToUm 已从硬件层迁为 MotorConfig 静态方法，MinGW 亦可单测）。[src/cli](file:///d:/CPP/Multi-Controller-Source/src/cli) 新增 `Multi-ControllerCLI` 命令行入口，与 GUI 共用 `mc_core`。日志从 UI 坐标解耦至 core 的 logMessage 信号，UI 订阅刷新。3rdparty 已从约 112.8 MB 瘦身至构建必需文件，.gitignore、build 目录忽略、厂商二进制白名单已建立，新克隆开箱可构建。
 
-仍存在的真实问题：DVP2 在 [CMakeLists.txt](file:///d:/CPP/Multi-Controller/CMakeLists.txt) 仍有 `add_subdirectory(3rdparty/DVP2)` 与 POST\_BUILD DLL 拷贝，但无任何 target 链接 `DVPCamera64`，属残留死代码。项目无单元测试、无配置管理（参数仍写在代码常量里）、无 CI。日志尚无文件持久化与分级。以上为后续待办的起点。
+经验证本段原文已过时：DVPCamera64 实际已被 mc_core 链接（dvp_camera.cpp 编译进硬件层），构建后 DVPCamera64.dll、Thorlabs 各 dll、toupcam.dll 均自动拷贝至输出目录，无孤儿 DLL；单元测试（motorstatus/motorconfig/appconfig）与配置管理（config.json + AppConfig）已存在，ctest 双工具链 3/3 通过；日志分级与文件持久化已落地（CLI 运行日志实测写入 logs/）。本次验证新发现与修复见文末「验证记录」。
 
 ## 改进方向与建议
 
@@ -24,13 +24,13 @@
 
 ### 方向三：日志系统　【部分完成】
 
-已完成业务/视图解耦：logMessage 已下沉至 core 的 [kcubemotor.h](file:///d:/CPP/Multi-Controller/src/core/kcubemotor.h) 并经 Qt 信号供 UI 订阅，接口签名是"业务只管记录、视图只管展示"。待办：引入 spdlog（经 vcpkg，注意与 Qt 编译选项一致）作为统一日志基座，落到控制台与按日期/大小轮转文件，引入分级（debug/info/warn/error）并与错误区分呈现。现有 logMessage 调用可平滑迁移到 spdlog 而兼容。
+已完成业务/视图解耦：logMessage 已下沉至 core 的 [kcubemotor.h](file:///d:/CPP/Multi-Controller-Source/src/core/hardware/kcubemotor.h) 并经 Qt 信号供 UI 订阅，接口签名是"业务只管记录、视图只管展示"。日志分级（debug/info/warn/error）与按日期文件持久化已由自研 logger 落地（CLI 运行实测写入 logs/）。待办：是否引入 spdlog 作为统一日志基座（经 vcpkg，注意与 Qt 编译选项一致）替换自研实现，属可选优化而非缺口。
 
-### 方向四：Agent CLI 程序　【待验证】
+### 方向四：Agent CLI 程序　【已完成并验证】
 
-已新增 `Multi-ControllerCLI` 可执行目标（[src/cli/main.cpp](file:///d:/CPP/Multi-Controller/src/cli/main.cpp)），用 Qt 的 QCommandLineParser 实现参数解析，与 GUI 共用 `mc_core`。支持 --list、--serial、--home、--stop、-m/--move、-r/--relative、--status、--velocity/--acceleration，已通过构建与运行时验证（--help/--list 正常输出）。用于无人值守、脚本化、自动化电机控制；CLI 参数解析将纳入后续测试体系（见方向七）。
+已新增 `Multi-ControllerCLI` 可执行目标（[src/cli/main.cpp](file:///d:/CPP/Multi-Controller-Source/src/cli/main.cpp)），用 Qt 的 QCommandLineParser 实现参数解析，与 GUI 共用 `mc_core`。支持 --list、--serial、--home、--stop、-m/--move、-r/--relative、--status、--velocity/--acceleration，2026-09 已通过 MSVC Release 构建与运行时验证（--help/--list 正常输出，日志落盘）。用于无人值守、脚本化、自动化电机控制；CLI 参数解析将纳入后续测试体系（见方向七）。遗留：控制台输出中文存在编码乱码（UTF-8 源码 × GBK 控制台），列入方向七处理。
 
-### 方向五：系统架构分层　【待验证】
+### 方向五：系统架构分层　【已完成并验证】
 
 核心已落地：单文件已按三层重构——`src/app`（GUI 装配）、`src/core`（硬件抽象与纯逻辑，mc\_core 库）、`src/cli`（复用 core）。单位换算与限位校验已下沉 core，状态位解析收敛为 mc::MotorStatus 具名枚举，原 mainwindow\.h 中无用的 DVP2 include 已移除。落地与原始建议的差异见「决策记录」：实际用 `src/app` 承载界面与装配（未单独拆 `src/ui`），且按 YAGNI 暂未引入 IMotor/ICamera 抽象接口（当前仅 KDC101 单实现）。待接入第二种电机或相机时，再依据「架构基线」补接口与适配器。
 
@@ -42,9 +42,9 @@
 
 最后阶段补齐工程化短板，拆为五条待办：一是配置管理，用 JSON/YAML 读取设备序列号默认选择、速度加速度初始值、限位范围、日志级别与文件路径等，消除代码内硬编码，用户在 GUI 的设置可持久化并在下次启动恢复。二是测试体系，为 core 层的单位换算、状态位解析、限位校验、CLI 参数解析补充单元测试（Qt Test 或 Catch2，经 vcpkg 管理），并用 CTest 让构建即测试（对应「需求与追踪」中测试性需求）。三是持续集成与交付，配 GitHub Actions 在 Windows 执行 configure、build、test，合并前保持健康并产出安装包。四是文档与贡献规范统一，保持 README、DEPENDENCIES、CHANGELOG 与真实代码同步。五是错误处理与用户交互优化，对硬件通信失败给出明确提示与可恢复路径，替代大量平铺的"警告:xxx失败"日志。
 
-### TOUPCam 相机集成专项　【待办】
+### TOUPCam 相机集成专项　【接入就绪 · 待硬件实测】
 
-作为与 DVP2 平级的相机实现接入。前置：先清理当前 DVP2 残留死代码（无 target 链接的 DVPCamera64），或将 DVP2 明确为相机承载落点。接入沿用「架构基线」的 ICamera 备选契约，新增 3rdparty/TOUCAM 目录，确认厂商 SDK 头文件与 64 位 lib/dll，在 CMake 中参数化引入并在 POST\_BUILD 拷贝 dll。相机采集不应在 UI 槽函数同步执行，应放后台上报帧线程，通过信号把帧回传 UI 刷新。界面与相机解耦后，TOUPCam 只需提供符合契约的实现即可无缝接入。
+已完成：3rdparty/ToupTek 按惯例仅入库构建必需文件（include/toupcam.h、lib/x64/toupcam.lib、bin/x64/toupcam.dll），新增 ToupCam 导入库目标接入硬件层，GUI 构建自动拷贝 toupcam.dll（2026-09 实测拷贝成功）；[toup_camera.cpp](file:///d:/CPP/Multi-Controller-Source/src/core/hardware/toup_camera.cpp) 经 QLibrary 提供连接/采帧/保存接口。前置已随 ToupTek 落地完成。待办：连接真实相机实测后台采帧与实时画面显示，验证 ICamera 备选契约。
 
 ### 方向八：NSIS 打包　【待办】
 
@@ -56,23 +56,23 @@
 
 ### 方向十：MSYS2 编译工具链支持　【待办】
 
-当前构建链强依赖 MSVC2022。建议新增 MSYS2/MinGW 构建预设（声明编译器、toolchain、可选 vcpkg toolchain），使同源 MSVC 与 MinGW 均可编译。已核实厂商 ABI（见「已核实结论」）：KDC101 与 DVP2 仅提供 MSVC ABI 的 .lib、无 .a，因此 MinGW 只能编译 core 纯逻辑与 CLI，硬件适配层受 ABI 限制。CI 可在 MSVC 与 MSYS2 两条路径分别验证构建。
+当前构建链强依赖 MSVC2022。建议新增 MSYS2/MinGW 构建预设（声明编译器、toolchain、可选 vcpkg toolchain），使同源 MSVC 与 MinGW 均可编译。已核实厂商 ABI（见「已核实结论」）：KDC101/DVP2/ToupTek 仅提供 MSVC ABI 的 .lib、无 .a，因此 MinGW 只能编译 core 纯逻辑与测试，硬件适配层受 ABI 限制；CLI 在 CMakeLists 中由 MC_ENABLE_HARDWARE 门控，MinGW 构建不产出 CLI（修正原表述）。2026-09 实测：MinGW 与 MSVC 双路径均构建通过、ctest 3/3 全绿。CI 可在 MSVC 与 MSYS2 两条路径分别验证构建。
 
 ## 剩余待办里程碑与门禁
 
 已完成基础治理与架构分层；剩余按里程碑推进，每个里程碑含明确交付物与完成门禁（Gate）。
 
-阶段 M1 · DVP2 死代码清理。交付物：清理后的 CMakeLists 与 3rdparty。门禁：移除无 target 链接的 DVPCamera64 add\_subdirectory 与 POST\_BUILD 拷贝（或明确其作为相机承载），构建通过，无孤儿 DLL。关联需求 FR-Cam。
+阶段 M1 · DVP2 死代码清理　【已完成】。经核实 DVPCamera64 一直为 dvp_camera.cpp 所用并被 mc_core 链接，并无死代码；2026-09 构建实证 DVPCamera64.dll 正确部署，无孤儿 DLL。关联需求 FR-Cam。
 
-阶段 M2 · 日志系统与软件图标。交付物：spdlog 基座（含控制台+轮转文件+分级）、统一 app.ico 与 .rc 挂载。门禁：日志落地并分级，exe/任务栏图标统一；依赖方向二引入 vcpkg，故将并入 M2 前置。关联 FR-Log、NFR-Tool。
+阶段 M2 · 日志系统与软件图标　【日志/图标已完成，spdlog 待定】。日志分级与文件持久化已由自研 logger 落地（CLI 运行实测写入 logs/），app.ico 经 app.rc 挂载进 exe（构建实证）。待办：是否以 spdlog 替换自研基座（依赖方向二 vcpkg）。关联 FR-Log、NFR-Tool。
 
-阶段 M3 · 配置管理与测试体系。交付物：JSON/YAML 配置加载、mc\_core/CLI 单元测试与 CTest 接入。门禁：ctest 全绿，参数可不重新编译而由配置文件调整。关联 FR-Cfg、NFR-Test。
+阶段 M3 · 配置管理与测试体系　【已完成并验证】。config.json + AppConfig 已实现，单元测试 3 项（motorstatus/motorconfig/appconfig），ctest 在 MinGW 与 MSVC 双工具链 3/3 全绿（2026-09 实测）。待办：CLI 参数解析的单元测试。关联 FR-Cfg、NFR-Test。
 
-阶段 M4 · MSYS2 与 CI。交付物：MSYS2/MinGW 预设、GH Actions 双工具链 workflow。门禁：MSVC 与 MinGW（core/CLI，若 ABI 允许含硬件层）均构建通过。关联 NFR-Tool、FR-CI。
+阶段 M4 · MSYS2 与 CI　【构建部分已完成，CI 待远端验证】。CMakePresets 已修正为真实环境（C:/Programs/Qt/6.10.1 + Qt 自带 mingw1310_64），MinGW 与 MSVC 双路径本地构建通过；GH Actions workflow 已存在，需在远端实测。修正：MinGW 仅 core/tests，CLI 随硬件层走 MSVC。关联 NFR-Tool、FR-CI。
 
-阶段 M5 · NSIS 打包。交付物：安装包 target 与 NSIS 脚本，含卸载/快捷方式/依赖收集。门禁：干净环境可安装、卸载，无缺 dll。依赖 M2 图标与 windeployqt。关联 FR-Pkg。
+阶段 M5 · NSIS 打包　【构建阶段已跑通，待安装实测】。deploy.cmake 在构建中实测跑通 windeployqt → installer-staging，makensis 在位；待办：实际生成安装包并在干净环境安装/卸载验证。依赖 M2 图标与 windeployqt。关联 FR-Pkg。
 
-阶段 M6 · TOUPCam 相机接入。交付物：3rdparty/TOUCAM、ICamera 备选契约实现、后台采帧。门禁：可连接并显示实时画面。依赖 M1/M3。关联 FR-Cam。
+阶段 M6 · TOUPCam 相机接入　【SDK 就绪，待硬件实测】。交付物已落地：3rdparty/ToupTek（include/lib/bin）+ ToupCam 导入目标 + toupcam.dll 自动部署；toup_camera.cpp 提供连接/采帧接口。门禁：连接真实相机并显示实时画面（需硬件，待验证）。关联 FR-Cam。
 
 整体以"先解耦、再扩展"为主线：硬件与 UI 已解耦，后续功能在 core 与接口上叠加，避免在未解耦代码上继续累积复杂度。
 
@@ -128,17 +128,30 @@
 - 未建 IMotor/ICamera 抽象接口：当前仅 KDC101 单机种，按 YAGNI 暂用具体类 KCubeMotor + mc 命名空间状态模型；接入第二种设备/相机时再依据「架构基线」补接口与适配器。
 - 目录采用 src/app（含装配+界面），未单独拆 src/ui。
 - CLI 与 GUI 共用同一 mc\_core。
+- ToupTek SDK 按惯例仅入库构建必需文件（include/toupcam.h、lib/x64/toupcam.lib、bin/x64/toupcam.dll），约 100MB 示例/驱动/winrt 不入库；当前 toup_camera 经 QLibrary 运行期加载，ToupCam 导入目标仅为编译期可用性准备。
+- src/core 进一步拆出 hardware/ 子目录（kcubemotor/dvp_camera/toup_camera/sim_camera），纯逻辑与硬件适配边界显式化。
+- devicePositionToUm 由 kcubemotor.h/.cpp 下沉为 MotorConfig 静态方法（纯逻辑，MinGW 无硬件亦可单测），修复了 MinGW 构建 test_motorconfig 的链接失败。
 
 ## 已核实结论
 
-厂商 ABI 已核实：`3rdparty/` 下 KDC101 与 DVP2 均只提供 MSVC ABI 的 `.lib`，无 MinGW 兼容的 `.a`。因此 MSYS2/MinGW 只能保证 core 纯逻辑与 CLI 可编译链接，硬件适配层受 ABI 限制——为方向十 MinGW 验证范围提供事实依据。
+厂商 ABI 已核实：`3rdparty/` 下 KDC101、DVP2 与 ToupTek 均只提供 MSVC ABI 的 `.lib`，无 MinGW 兼容的 `.a`。因此 MSYS2/MinGW 只能保证 core 纯逻辑与测试可编译链接，硬件适配层受 ABI 限制——为方向十 MinGW 验证范围提供事实依据。2026-09 已用 Qt 6.10.1 在 MinGW（C:/Programs/Qt/Tools/mingw1310_64）与 MSVC（VS 2026）双路径实测构建通过。
 
 ## 架构基线
 
-已落地基线：`mc_core` 静态库由 [kcubemotor.cpp](file:///d:/CPP/Multi-Controller/src/core/kcubemotor.cpp)（KCubeMotor:QObject，封装 CC\_/TLI\_ 并发射 logMessage/connectedChanged 信号）、[motorstatus.cpp](file:///d:/CPP/Multi-Controller/src/core/motorstatus.cpp)（mc::MotorStatus 具名状态模型）、[motorconfig.h](file:///d:/CPP/Multi-Controller/src/core/motorconfig.h)（参数常量）组成；`src/app` 装配 UI；`src/cli` 复用 mc\_core。core 仅依赖 Qt Core + KDC101，不依赖 UI。
+已落地基线：`mc_core` 静态库由 [kcubemotor.cpp](file:///d:/CPP/Multi-Controller-Source/src/core/hardware/kcubemotor.cpp)（KCubeMotor:QObject，封装 CC\_/TLI\_ 并发射 logMessage/connectedChanged 信号）、[motorstatus.cpp](file:///d:/CPP/Multi-Controller-Source/src/core/motorstatus.cpp)（mc::MotorStatus 具名状态模型）、[motorconfig.h](file:///d:/CPP/Multi-Controller-Source/src/core/motorconfig.h)（参数常量 + devicePositionToUm 静态方法）组成；硬件适配层位于 `src/core/hardware/`（kcubemotor/dvp_camera/toup_camera/sim_camera），`src/app` 装配 UI，`src/cli` 复用 mc\_core。core 仅依赖 Qt Core + 厂商 SDK，不依赖 UI。
 
 未来扩展契约（备选签名，按需再实现）：IMotor 提供 connectTo/disconnect/home/moveTo/moveRelative/setVelocity/position/status；ICamera 提供 connect/startCapture/stopCapture/grabFrame/save。引入第二类电机或 TOUPCam 时据此新增实现与适配器，UI 面向接口编程；若厂商差异过大，回退为"各自封装 + UI 按设备类型分发"。
 
 ## 验证方式
 
 本文档采用系统化验收（Definition of Done）而非空泛门槛。已完成的四个方向（一/四/五，三之解耦部分）已通过现实验证（配置+构建+链接+CLI 运行）。对剩余待办，以里程碑完成门禁为验收：M1 清理完成（无孤儿 DLL、构建通过）；M2 日志分级落盘、图标统一到 exe/任务栏；M3 ctest 全绿且配置可不编译即调整；M4 MSVC 与 MinGW（core/CLI 必过，硬件层视 ABI）双路径构建通过；M5 干净环境可安装/卸载、无缺 dll；M6 TOUPCam 可连接并实时显示。所有门禁需以实际产物与 ctest 实证，杜绝"仅无报错即断言成功"。
+
+## 验证记录（2026-09-26）
+
+按本文档门禁在本机环境（Qt 6.10.1 at C:/Programs/Qt，Qt 自带 MinGW 13.1.0，VS 2026）实测，结果如下。
+
+双工具链 configure 与 build 全部通过。MinGW（MC_ENABLE_HARDWARE=OFF）产出 mc_core 与 3 个测试 exe；MSVC（Visual Studio 18 2026 生成器，Release）产出 Multi-Controller.exe、Multi-ControllerCLI.exe、测试 exe 及 installer-staging（windeployqt 已在构建期跑通）。厂商 DLL（DVPCamera64.dll、Thorlabs.MotionControl.*.dll、toupcam.dll）均经 POST_BUILD 自动拷贝至输出目录，无缺失、无孤儿 DLL。ctest 在 MinGW 与 MSVC 两条路径均为 3/3 通过（motorstatus/motorconfig/appconfig）。CLI 实测：--help 与 --list 正常输出，日志分级与文件持久化落地（Release/logs/multi-controller_2026-09-26.log）；发现控制台中文输出存在编码乱码（UTF-8 源码 × GBK 控制台），列入方向七。
+
+验证暴露并修复一处真实缺陷：MinGW 构建 test_motorconfig 链接失败（devicePositionToUm 定义位于硬件层 kcubemotor.cpp，硬件关闭时不可见），已将其下沉为 MotorConfig 静态方法，MinGW 与 MSVC 均回归通过。另修正 CMakePresets 的过时配置：Qt 路径由 6.7.3/C:/Qt 改为 6.10.1/C:/Programs/Qt，并修正 MinGW 范围描述（CLI 由 MC_ENABLE_HARDWARE 门控，MinGW 不产出 CLI）。
+
+仍未完成、需后续处理的事项：CI 需在 GitHub Actions 远端实测；NSIS 安装包需在干净环境生成并安装/卸载验证；TOUPCam 需连接真实相机实测采帧与实时画面；CLI 参数解析尚无单元测试；控制台中文乱码待修复。

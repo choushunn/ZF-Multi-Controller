@@ -37,10 +37,10 @@ void TestMotorConfig::testCustomConfig()
 void TestMotorConfig::testDevicePositionToUm()
 {
     // 0.029 μm per unit
-    QCOMPARE(devicePositionToUm(0, 0.029), 0.0);
-    QCOMPARE(devicePositionToUm(1, 0.029), 0.029);
-    QCOMPARE(devicePositionToUm(100, 0.029), 2.9);
-    QCOMPARE(devicePositionToUm(1000, 0.029), 29.0);
+    QCOMPARE(mc::MotorConfig::devicePositionToUm(0, 0.029), 0.0);
+    QCOMPARE(mc::MotorConfig::devicePositionToUm(1, 0.029), 0.029);
+    QCOMPARE(mc::MotorConfig::devicePositionToUm(100, 0.029), 2.9);
+    QCOMPARE(mc::MotorConfig::devicePositionToUm(1000, 0.029), 29.0);
 }
 
 void TestMotorConfig::testMinPositionUnitsCalc()

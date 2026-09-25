@@ -10,11 +10,6 @@ using mc::MotorConfig;
 using mc::Logger;
 using mc::LogLevel;
 
-double devicePositionToUm(int positionUnits, double positionToUm)
-{
-    return positionUnits * positionToUm;
-}
-
 KCubeMotor::KCubeMotor(QObject *parent)
     : QObject(parent), connected_(false)
 {
@@ -289,7 +284,7 @@ double KCubeMotor::positionUm() const
 {
     if (!connected_)
         return 0.0;
-    return devicePositionToUm(CC_GetPosition(serial_), config_.positionToUm);
+    return MotorConfig::devicePositionToUm(CC_GetPosition(serial_), config_.positionToUm);
 }
 
 mc::MotorStatus KCubeMotor::status() const

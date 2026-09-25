@@ -31,6 +31,12 @@ struct MotorConfig {
     MotorConfig(double posToUm, double minMm, double maxMm, int vel, int acc)
         : positionToUm(posToUm), minPositionMm(minMm), maxPositionMm(maxMm)
         , defaultMaxVelocity(vel), defaultAcceleration(acc) {}
+
+    // 设备单位位置 → 微米换算（纯逻辑，无硬件依赖，MinGW 亦可单测）
+    static double devicePositionToUm(int positionUnits, double positionToUm = kPositionToUm)
+    {
+        return positionUnits * positionToUm;
+    }
 };
 
 } // namespace mc

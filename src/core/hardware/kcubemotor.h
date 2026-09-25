@@ -60,6 +60,3 @@ private:
     int minPositionUnits() const;
     int maxPositionUnits() const;
 };
-
-// 电机单元转换辅助：将设备单位位置转换为微米
-double devicePositionToUm(int positionUnits, double positionToUm = mc::MotorConfig::kPositionToUm);
