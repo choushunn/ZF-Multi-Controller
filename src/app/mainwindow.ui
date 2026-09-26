@@ -207,8 +207,100 @@ QPushButton:hover { color: white; background-color: #E5484D; }</string>
          <number>12</number>
         </property>
         <item>
-         <layout class="QVBoxLayout" name="motionStack">
-          <property name="spacing">
+         <widget class="QGroupBox" name="cameraControlBox">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="title">
+           <string>相机控制</string>
+          </property>
+          <layout class="QGridLayout" name="cameraControlGrid">
+           <property name="leftMargin">
+            <number>8</number>
+           </property>
+           <property name="topMargin">
+            <number>8</number>
+           </property>
+           <property name="rightMargin">
+            <number>8</number>
+           </property>
+           <property name="bottomMargin">
+            <number>8</number>
+           </property>
+           <item row="0" column="0">
+            <widget class="QLabel" name="labelExposure">
+             <property name="minimumSize">
+              <size>
+               <width>92</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>曝光时间(ms):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QDoubleSpinBox" name="exposureSpinBox">
+             <property name="decimals">
+              <number>3</number>
+             </property>
+             <property name="maximum">
+              <double>1000.000000000000000</double>
+             </property>
+             <property name="suffix">
+              <string> ms</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="labelGain">
+             <property name="minimumSize">
+              <size>
+               <width>92</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>增益(%):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QSpinBox" name="gainSpinBox">
+             <property name="maximum">
+              <number>100</number>
+             </property>
+             <property name="suffix">
+              <string> %</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="labelResolution">
+             <property name="minimumSize">
+              <size>
+               <width>92</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>分辨率:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QComboBox" name="resolutionComboBox"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="motionGroupBox">
+          <property name="title">
+           <string>电机控制</string>
+          </property>
+          <layout class="QVBoxLayout" name="motionStackLayout"><property name="spacing">
            <number>10</number>
           </property>
           <item>
@@ -644,132 +736,18 @@ QPushButton:hover { color: white; background-color: #E5484D; }</string>
             </item>
            </layout>
           </item>
-         </layout>
-          </item>
-        <item>
-         <widget class="QGroupBox" name="cameraControlBox">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="title">
-           <string>相机控制</string>
-          </property>
-          <layout class="QGridLayout" name="cameraControlGrid">
-           <property name="leftMargin">
-            <number>8</number>
-           </property>
-           <property name="topMargin">
-            <number>8</number>
-           </property>
-           <property name="rightMargin">
-            <number>8</number>
-           </property>
-           <property name="bottomMargin">
-            <number>8</number>
-           </property>
-           <item row="0" column="0">
-            <widget class="QLabel" name="labelExposure">
-             <property name="minimumSize">
-              <size>
-               <width>92</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>曝光时间(ms):</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QDoubleSpinBox" name="exposureSpinBox">
-             <property name="decimals">
-              <number>3</number>
-             </property>
-             <property name="maximum">
-              <double>1000.000000000000000</double>
-             </property>
-             <property name="suffix">
-              <string> ms</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="labelGain">
-             <property name="minimumSize">
-              <size>
-               <width>92</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>增益(%):</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QSpinBox" name="gainSpinBox">
-             <property name="maximum">
-              <number>100</number>
-             </property>
-             <property name="suffix">
-              <string> %</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="labelResolution">
-             <property name="minimumSize">
-              <size>
-               <width>92</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>分辨率:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QComboBox" name="resolutionComboBox"/>
-           </item>
           </layout>
          </widget>
         </item>
         <item>
-         <layout class="QVBoxLayout" name="verticalLayout_3">
-          <property name="spacing">
-           <number>6</number>
+         <widget class="QGroupBox" name="logGroupBox">
+          <property name="title">
+           <string>日志</string>
           </property>
-          <item>
-           <layout class="QHBoxLayout" name="logHeader">
-            <property name="spacing">
-             <number>8</number>
-            </property>
-            <item>
-             <widget class="QLabel" name="logTitle">
-              <property name="font">
-               <font/>
-              </property>
-              <property name="text">
-               <string>日志</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="horizontalSpacer_6">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </item>
+          <layout class="QVBoxLayout" name="logStackLayout">
+           <property name="spacing">
+            <number>6</number>
+           </property>
           <item>
            <widget class="QPlainTextEdit" name="logTextEdit">
             <property name="minimumSize">
@@ -786,7 +764,8 @@ QPushButton:hover { color: white; background-color: #E5484D; }</string>
             </property>
            </widget>
           </item>
-         </layout>
+          </layout>
+         </widget>
         </item>
        </layout>
       </widget>
