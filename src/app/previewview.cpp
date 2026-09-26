@@ -155,8 +155,8 @@ void PreviewView::drawRulers(QPainter &painter)
     painter.setFont(QFont(painter.font().family(), 8));
     const QFontMetrics fm(painter.font());
 
-    // 顶部刻度（X 像素坐标，短线固定绘制在顶部带内，不贴合图像边缘）
-    for (double x = stepX; x < sceneRect.width(); x += stepX) {
+    // 顶部刻度（X 像素坐标，短线固定绘制在顶部带内，包含 0 刻度）
+    for (double x = 0; x <= sceneRect.width(); x += stepX) {
         const double sx = screen.left() + x * scaleX;
         painter.setPen(linePen);
         painter.drawLine(QPointF(sx, kPadY - kTickLen), QPointF(sx, kPadY - 1));
@@ -165,8 +165,8 @@ void PreviewView::drawRulers(QPainter &painter)
         painter.drawText(textRect, Qt::AlignHCenter | Qt::AlignBottom, label);
     }
 
-    // 左侧刻度（Y 像素坐标，短线固定绘制在左侧带内，不贴合图像边缘）
-    for (double y = stepY; y < sceneRect.height(); y += stepY) {
+    // 左侧刻度（Y 像素坐标，短线固定绘制在左侧带内，包含 0 刻度）
+    for (double y = 0; y <= sceneRect.height(); y += stepY) {
         const double sy = screen.top() + y * scaleY;
         painter.setPen(linePen);
         painter.drawLine(QPointF(kPadX - kTickLen, sy), QPointF(kPadX - 1, sy));
