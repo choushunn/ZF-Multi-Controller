@@ -2,7 +2,6 @@
 
 #include <QApplication>
 #include <QIcon>
-#include <QFile>
 
 #include "core/appconfig.h"
 #include "core/logger.h"
@@ -28,11 +27,6 @@ int main(int argc, char *argv[])
 
     // 设置窗口图标（.rc 已挂载到 exe，此处兜底）
     a.setWindowIcon(QIcon(QStringLiteral(":/icons/app.ico")));
-
-    // 应用全局 QSS 主题（资源内编译）
-    QFile themeFile(QStringLiteral(":/theme.qss"));
-    if (themeFile.open(QIODevice::ReadOnly | QIODevice::Text))
-        a.setStyleSheet(QString::fromUtf8(themeFile.readAll()));
 
     MainWindow w;
     w.showFullScreen();  // 默认全屏，可用"视图→全屏模式"或 F11/Esc 退出
