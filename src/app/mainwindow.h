@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QTimer>
+#include <QAction>
 
 #include "core/motorconfig.h"
 
@@ -24,6 +25,10 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
+
+protected:
+    // Esc 在全屏模式下退出全屏
+    void keyPressEvent(QKeyEvent *event) override;
 
 private slots:
     // KDC101 控制相关槽函数
@@ -64,6 +69,7 @@ private:
     QTimer *statusTimer;
     KCubeMotor *motor;
     mc::ICamera *camera;
+    QAction *m_fullscreenAct = nullptr;  // "视图 → 全屏模式"（checkable，F11 切换）
 };
 
 #endif // MAINWINDOW_H

@@ -29,6 +29,6 @@ int main(int argc, char *argv[])
     a.setWindowIcon(QIcon(QStringLiteral(":/icons/app.ico")));
 
     MainWindow w;
-    w.show();
+    w.showFullScreen();  // 默认全屏，可用"视图→全屏模式"或 F11/Esc 退出
     return a.exec();
 }

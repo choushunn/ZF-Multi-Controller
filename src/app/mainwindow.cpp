@@ -8,6 +8,7 @@
 #include <QImage>
 #include <QSplitter>
 #include <QTimer>
+#include <QKeyEvent>
 #include <QDir>
 #include <QStandardPaths>
 
@@ -118,12 +119,33 @@ MainWindow::MainWindow(QWidget *parent)
     ui->mainSplitter->setStyleSheet(QStringLiteral(
         "QSplitter::handle { background: #c0c0c8; }"));
 
+    // "视图 → 全屏模式"：启动即全屏，可经菜单/快捷键退出
+    QMenu *viewMenu = menuBar()->addMenu(QStringLiteral("视图(&V)"));
+    m_fullscreenAct = viewMenu->addAction(QStringLiteral("全屏模式(&F)"));
+    m_fullscreenAct->setCheckable(true);
+    m_fullscreenAct->setChecked(true);   // 与 main() 的 showFullScreen() 保持一致
+    m_fullscreenAct->setShortcut(QKeySequence::FullScreen);  // F11
+    connect(m_fullscreenAct, &QAction::toggled, this, [this](bool fs) {
+        if (fs) showFullScreen();
+        else    showNormal();
+    });
+
     // 首次设备/相机列表刷新延迟到事件循环启动、主窗口已显示之后再执行：
     // 避免"未发现设备"弹窗先于主窗口出现。手动"刷新列表"仍同步刷新并正常弹窗。
     QTimer::singleShot(0, this, [this]() {
         refreshDeviceList();
         refreshCameraList();
     });
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *e)
+{
+    // 全屏模式下按 Esc 退出全屏（进入/退出也可用 F11，经菜单 QAction 切换）
+    if (e->key() == Qt::Key_Escape && isFullScreen()) {
+        m_fullscreenAct->setChecked(false);  // 触发 toggled → showNormal()
+        return;
+    }
+    QMainWindow::keyPressEvent(e);
 }
 
 MainWindow::~MainWindow()
