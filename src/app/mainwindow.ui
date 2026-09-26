@@ -149,19 +149,6 @@
        </widget>
       </item>
       <item>
-       <spacer name="horizontalSpacer_tb">
-        <property name="orientation">
-         <enum>Qt::Orientation::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item>
        <widget class="QFrame" name="sepExit">
         <property name="frameShape">
          <enum>QFrame::Shape::VLine</enum>
@@ -187,6 +174,19 @@ QPushButton:hover { color: white; background-color: #E5484D; }</string>
          <string>退出全屏</string>
         </property>
        </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_5">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
       </item>
      </layout>
     </item>
@@ -772,6 +772,13 @@ QPushButton:hover { color: white; background-color: #E5484D; }</string>
        <widget class="QLabel" name="imageInfoLabel">
         <property name="text">
          <string>图像信息: 无</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="frameRateLabel">
+        <property name="text">
+         <string>帧率: --</string>
         </property>
        </widget>
       </item>

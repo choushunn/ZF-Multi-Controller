@@ -472,6 +472,17 @@ void MainWindow::onCameraFrameReady(const QImage &frame)
         ui->cameraDisplayLabel->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
     ui->cameraDisplayLabel->setPixmap(pix);
     ui->imageInfoLabel->setText(QStringLiteral("图像信息: %1x%2").arg(frame.width()).arg(frame.height()));
+
+    // 帧率统计：用帧间隔做指数平滑，避免瞬时跳动
+    if (!m_fpsClock.isValid())
+        m_fpsClock.start();
+    const qint64 now = m_fpsClock.elapsed();
+    if (m_lastFpsMs >= 0 && now > m_lastFpsMs) {
+        const double instFps = 1000.0 / double(now - m_lastFpsMs);
+        m_frameFps = m_frameFps > 0.0 ? 0.8 * m_frameFps + 0.2 * instFps : instFps;
+    }
+    m_lastFpsMs = now;
+    ui->frameRateLabel->setText(QStringLiteral("帧率: %1 FPS").arg(m_frameFps, 0, 'f', 1));
 }
 
 void MainWindow::onCameraConnectedChanged(bool connected)

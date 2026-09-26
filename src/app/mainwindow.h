@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QTimer>
 #include <QAction>
+#include <QElapsedTimer>
 
 #include "core/motorconfig.h"
 
@@ -78,6 +79,9 @@ private:
     bool m_cameraFullscreen = false;     // 摄像头显示区当前是否处于全屏
     QWidget *m_cameraParent = nullptr;   // 全屏前的父容器，用于恢复
     QLayout *m_cameraLayout = nullptr;   // 全屏前的父布局，用于恢复
+    QElapsedTimer m_fpsClock;            // 相机帧率统计时钟
+    qint64 m_lastFpsMs = -1;             // 上一帧时间戳(ms)
+    double m_frameFps = 0.0;             // 平滑后的帧率(EWMA)
 };
 
 #endif // MAINWINDOW_H
