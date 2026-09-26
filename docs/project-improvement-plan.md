@@ -156,4 +156,4 @@
 
 仍未完成、需后续处理的事项：CI 需在 GitHub Actions 远端实测；TOUPCam 需连接真实相机实测采帧与实时画面；CLI 参数解析尚无单元测试。
 
-后续验证追加（M5 NSIS 打包，2026-09-26）：构建 `package_installer` target 暴露 installer.nsi 第 86 行注释含 UTF-8 em-dash（3 字节，非 GBK 可解码），NSIS 按 ACP 解析报 "Bad text encoding"；改为 ASCII 连字符后 makensis 成功产出 Multi-Controller-0.1.0-win64-setup.exe（16.6MB，x86-unicode，LZMA）。随后用 /S /D= 静默安装到干净目录：Multi-Controller.exe、Multi-ControllerCLI.exe 及 27 个 DLL（Qt 运行库已由 windeployqt 本地化）齐备；清空 PATH 后安装目录下的 CLI --list 仍可运行，确认无对外部 Qt 运行时依赖，M5 门禁达成。
+后续验证追加（M5 NSIS 打包，2026-09-26）：构建 `package_installer` target 暴露 installer.nsi 第 86 行注释含 UTF-8 em-dash（3 字节，非 GBK 可解码），NSIS 按 ACP 解析报 "Bad text encoding"；改为 ASCII 连字符后 makensis 成功产出 Multi-Controller-0.1.0-win64-setup.exe（16.6MB，x86-unicode，LZMA）。随后用 /S /D= 静默安装到干净目录：Multi-Controller.exe、Multi-ControllerCLI.exe 及 27 个 DLL（Qt 运行库已由 windeployqt 本地化）齐备；清空 PATH 后安装目录下的 CLI --list 仍可运行，确认无对外部 Qt 运行时依赖，M5 门禁达成。修复项：安装后报"未找到 ToupTek SDK（toupcam.dll）"，因 deploy.cmake 的 MC_VENDOR_DLLS 漏了 toupcam.dll（staging/安装包不含），补充后重装实测 4 个厂商 DLL（Thorlabs×2、DVPCamera64、toupcam）全部就位。
