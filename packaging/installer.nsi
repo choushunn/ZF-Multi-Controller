@@ -82,7 +82,7 @@ Section "${APP_NAME} (required)" SecCore
   File "${STAGING_DIR}\${CLI_EXE}"
 
   ; Qt runtime tree collected by windeployqt (DLLs + platforms/styles/...) and
-  ; vendor DLLs (Thorlabs + DVP) — everything else lives in the staging dir.
+  ; vendor DLLs (Thorlabs + DVP) - everything else lives in the staging dir.
   ; app.ico (when present) is also carried over from staging, so shortcuts can
   ; reference $INSTDIR\app.ico below.
   File /nonfatal /r "${STAGING_DIR}\*.*"

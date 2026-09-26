@@ -70,7 +70,7 @@
 
 阶段 M4 · MSYS2 与 CI　【构建部分已完成，CI 待远端验证】。CMakePresets 已修正为真实环境（C:/Programs/Qt/6.10.1 + Qt 自带 mingw1310_64），MinGW 与 MSVC 双路径本地构建通过；GH Actions workflow 已存在，需在远端实测。修正：MinGW 仅 core/tests，CLI 随硬件层走 MSVC。关联 NFR-Tool、FR-CI。
 
-阶段 M5 · NSIS 打包　【构建阶段已跑通，待安装实测】。deploy.cmake 在构建中实测跑通 windeployqt → installer-staging，makensis 在位；待办：实际生成安装包并在干净环境安装/卸载验证。依赖 M2 图标与 windeployqt。关联 FR-Pkg。
+阶段 M5 · NSIS 打包　【已完成并实测验证】。构建期实测跑通 windeployqt → installer-staging → makensis 生成 Multi-Controller-0.1.0-win64-setup.exe（16.6MB），并静默安装到干净目录验证：exe/CLI/27 个 DLL（Qt 运行库本地化）齐备，空 PATH 下 CLI 可运行。修复安装过程中发现的 installer.nsi em-dash（非 GBK 编码）导致 makensis "Bad text encoding" 报错。关联 FR-Pkg。
 
 阶段 M6 · TOUPCam 相机接入　【SDK 就绪，待硬件实测】。交付物已落地：3rdparty/ToupTek（include/lib/bin）+ ToupCam 导入目标 + toupcam.dll 自动部署；toup_camera.cpp 提供连接/采帧接口。门禁：连接真实相机并显示实时画面（需硬件，待验证）。关联 FR-Cam。
 
@@ -154,4 +154,6 @@
 
 验证暴露并修复一处真实缺陷：MinGW 构建 test_motorconfig 链接失败（devicePositionToUm 定义位于硬件层 kcubemotor.cpp，硬件关闭时不可见），已将其下沉为 MotorConfig 静态方法，MinGW 与 MSVC 均回归通过。另修正 CMakePresets 的过时配置：Qt 路径由 6.7.3/C:/Qt 改为 6.10.1/C:/Programs/Qt，并修正 MinGW 范围描述（CLI 由 MC_ENABLE_HARDWARE 门控，MinGW 不产出 CLI）。
 
-仍未完成、需后续处理的事项：CI 需在 GitHub Actions 远端实测；NSIS 安装包需在干净环境生成并安装/卸载验证；TOUPCam 需连接真实相机实测采帧与实时画面；CLI 参数解析尚无单元测试。
+仍未完成、需后续处理的事项：CI 需在 GitHub Actions 远端实测；TOUPCam 需连接真实相机实测采帧与实时画面；CLI 参数解析尚无单元测试。
+
+后续验证追加（M5 NSIS 打包，2026-09-26）：构建 `package_installer` target 暴露 installer.nsi 第 86 行注释含 UTF-8 em-dash（3 字节，非 GBK 可解码），NSIS 按 ACP 解析报 "Bad text encoding"；改为 ASCII 连字符后 makensis 成功产出 Multi-Controller-0.1.0-win64-setup.exe（16.6MB，x86-unicode，LZMA）。随后用 /S /D= 静默安装到干净目录：Multi-Controller.exe、Multi-ControllerCLI.exe 及 27 个 DLL（Qt 运行库已由 windeployqt 本地化）齐备；清空 PATH 后安装目录下的 CLI --list 仍可运行，确认无对外部 Qt 运行时依赖，M5 门禁达成。
