@@ -294,6 +294,12 @@
             </item>
             <item>
              <widget class="QLabel" name="positionLabel">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="minimumSize">
                <size>
                 <width>150</width>
@@ -334,6 +340,12 @@
             </item>
             <item>
              <widget class="QSpinBox" name="positionSpinBox">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="enabled">
                <bool>false</bool>
               </property>
@@ -390,6 +402,12 @@
             </item>
             <item>
              <widget class="QDoubleSpinBox" name="velocitySpinBox">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="enabled">
                <bool>false</bool>
               </property>
@@ -458,6 +476,12 @@
             </item>
             <item>
              <widget class="QDoubleSpinBox" name="accelerationSpinBox">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="enabled">
                <bool>false</bool>
               </property>
@@ -526,6 +550,12 @@
             </item>
             <item>
              <widget class="QSpinBox" name="jogStepSpinBox">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="enabled">
                <bool>false</bool>
               </property>
