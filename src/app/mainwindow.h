@@ -64,8 +64,12 @@ private:
     bool cameraControlsValid() const;
     // 自动曝光时按相机实际曝光值刷新滑块与数值标签
     void syncExposureUi();
+    // 分段映射：前段(0..kSegmentASteps)精细覆盖 min..350ms，后段 350ms..max 粗略
+    int msToSliderPos(double ms) const;
+    double sliderPosToMs(int pos) const;
     bool syncingExposure_ = false;
     QTimer *exposureRefreshTimer = nullptr;
+    struct ExposureCtx { double minMs = 0.0; double maxMs = 0.0; bool valid = false; } exposure_;
     void refreshDeviceList();
     void refreshCameraList();
     void applyConfig();

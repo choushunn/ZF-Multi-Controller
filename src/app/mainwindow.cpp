@@ -100,10 +100,10 @@ MainWindow::MainWindow(QWidget *parent)
                     }
                 });
         connect(ui->exposureSlider, &QSlider::valueChanged,
-                this, [this](int us) {
+                this, [this](int pos) {
                     if (syncingExposure_)
                         return;  // 回读同步值，不产生写回
-                    const double ms = us / 1000.0;
+                    const double ms = sliderPosToMs(pos);
                     if (camera)
                         camera->setExposure(ms);
                     ui->exposureValueLabel->setText(QStringLiteral("%1 ms").arg(ms, 0, 'f', 3));
@@ -380,17 +380,20 @@ void MainWindow::enableCameraControls(bool enabled)
 // 相机连接后按 SDK 实际能力初始化曝光/增益/分辨率控件
 void MainWindow::setupCameraControls()
 {
-    // 曝光：加载相机后默认不自动曝光，滑块(μs 粒度)手动动态调整
+    // 曝光：加载相机后默认不自动曝光，滑块(分段映射)手动动态调整
     ui->autoExposureCheckBox->setChecked(false);
     ui->exposureSlider->setEnabled(false);
+    exposure_ = {};
     double minMs = 0, maxMs = 0;
     const bool hasExposure = camera->exposureRange(&minMs, &maxMs) && maxMs > minMs;
     if (hasExposure) {
-        const int minUs = qMax(1, int(minMs * 1000.0));
-        const int maxUs = qMax(minUs, int(maxMs * 1000.0));
-        ui->exposureSlider->setRange(minUs, maxUs);
+        exposure_.minMs = minMs;
+        exposure_.maxMs = maxMs;
+        exposure_.valid = true;
+        constexpr int kSliderSteps = 1000;
+        ui->exposureSlider->setRange(0, kSliderSteps);
         const double cur = camera->exposure();
-        ui->exposureSlider->setValue((cur >= minMs && cur <= maxMs) ? int(cur * 1000.0) : minUs);
+        ui->exposureSlider->setValue(cur >= minMs ? msToSliderPos(qMin(cur, maxMs)) : 0);
         ui->autoExposureCheckBox->setEnabled(true);
         ui->exposureSlider->setEnabled(true);
         camera->setAutoExposure(false);  // 默认手动模式
@@ -433,9 +436,49 @@ void MainWindow::syncExposureUi()
     if (ms < 0)
         return;
     syncingExposure_ = true;
-    ui->exposureSlider->setValue(int(ms * 1000.0));
+    ui->exposureSlider->setValue(msToSliderPos(ms));
     ui->exposureValueLabel->setText(QStringLiteral("%1 ms").arg(ms, 0, 'f', 3));
     syncingExposure_ = false;
+}
+
+// —— 曝光滑块分段映射 ——
+// 滑块 0..1000：前 800 档覆盖 [minMs, 350ms]（每档约 0.4ms，精细），
+// 后 200 档覆盖 [350ms, maxMs]（粗略）。max 不超过断点时全段线性。
+namespace {
+constexpr double kExposureBreakMs = 350.0;
+constexpr int kSliderTotalSteps = 1000;
+constexpr int kSegmentASteps = 800;
+}
+
+int MainWindow::msToSliderPos(double ms) const
+{
+    if (!exposure_.valid || ms < exposure_.minMs)
+        return 0;
+    if (ms >= exposure_.maxMs)
+        return kSliderTotalSteps;
+    if (exposure_.maxMs <= kExposureBreakMs) {
+        const double t = (ms - exposure_.minMs) / (exposure_.maxMs - exposure_.minMs);
+        return int(t * kSliderTotalSteps);
+    }
+    if (ms <= kExposureBreakMs) {
+        const double t = (ms - exposure_.minMs) / (kExposureBreakMs - exposure_.minMs);
+        return int(t * kSegmentASteps);
+    }
+    const double t = (ms - kExposureBreakMs) / (exposure_.maxMs - kExposureBreakMs);
+    return kSegmentASteps + int(t * (kSliderTotalSteps - kSegmentASteps));
+}
+
+double MainWindow::sliderPosToMs(int pos) const
+{
+    pos = qBound(0, pos, kSliderTotalSteps);
+    if (!exposure_.valid || exposure_.maxMs <= exposure_.minMs)
+        return exposure_.valid ? exposure_.maxMs : 0.0;
+    if (exposure_.maxMs <= kExposureBreakMs)
+        return exposure_.minMs + (exposure_.maxMs - exposure_.minMs) * pos / kSliderTotalSteps;
+    if (pos <= kSegmentASteps)
+        return exposure_.minMs + (kExposureBreakMs - exposure_.minMs) * pos / kSegmentASteps;
+    return kExposureBreakMs
+        + (exposure_.maxMs - kExposureBreakMs) * (pos - kSegmentASteps) / (kSliderTotalSteps - kSegmentASteps);
 }
 
 // 参数控件当前是否有效（用于使能相机控制框）
