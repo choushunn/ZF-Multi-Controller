@@ -246,6 +246,8 @@ void MainWindow::enableCameraControls(bool enabled)
     ui->captureBtn->setEnabled(enabled);
     ui->saveImageBtn->setEnabled(enabled);
     ui->cameraConnectBtn->setText(enabled ? QStringLiteral("断开相机") : QStringLiteral("连接相机"));
+    // 断开相机时把「捕获」按钮复位为「捕获图像」状态
+    ui->captureBtn->setText(QStringLiteral("捕获图像"));
 }
 
 void MainWindow::refreshDeviceList()
@@ -316,8 +318,20 @@ void MainWindow::onCameraConnectBtnClicked()
 
 void MainWindow::onCaptureBtnClicked()
 {
-    // frameReady 会自动更新画面，此处仅记录日志
-    onMotorLog(QStringLiteral("捕获图像"));
+    if (!camera)
+        return;
+
+    if (camera->isCapturing()) {
+        // 正在实时预览：冻结当前帧
+        camera->stopCapture();
+        ui->captureBtn->setText(QStringLiteral("恢复预览"));
+        onMotorLog(QStringLiteral("画面已冻结，可点击保存图像"));
+    } else {
+        // 已冻结：恢复实时预览
+        camera->startCapture();
+        ui->captureBtn->setText(QStringLiteral("捕获图像"));
+        onMotorLog(QStringLiteral("已恢复实时预览"));
+    }
 }
 
 void MainWindow::onSaveImageBtnClicked()
