@@ -533,8 +533,9 @@ void MainWindow::refreshCameraList()
         ui->cameraModelComboBox->addItem(name, cams[i]);
     }
     int idx = ui->cameraModelComboBox->findData(prevId);
-    if (idx >= 0)
-        ui->cameraModelComboBox->setCurrentIndex(idx);
+    // 有设备时默认选中第一个；prevId 仍然存在则沿用原选择
+    ui->cameraModelComboBox->setCurrentIndex(idx >= 0 ? idx : 0);
+    // 无设备：comboBox 为空，自动显示“选择相机型号”提示文字
 }
 
 void MainWindow::onCameraConnectBtnClicked()
