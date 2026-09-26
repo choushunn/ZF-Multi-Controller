@@ -55,6 +55,8 @@ private:
     void refreshCameraList();
     void applyConfig();
     void saveConfig();
+    // 在状态栏即时反馈运动操作结果（完整原因仍写日志）
+    void showMotionResult(const QString &okMsg, const QString &failMsg, bool ok);
 
     Ui::MainWindow *ui;
     QTimer *statusTimer;

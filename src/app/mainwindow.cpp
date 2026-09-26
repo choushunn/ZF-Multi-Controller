@@ -166,32 +166,42 @@ void MainWindow::on_refreshBtn_clicked()
 
 void MainWindow::on_homeBtn_clicked()
 {
-    motor->home();
+    showMotionResult(QStringLiteral("归位操作已启动"),
+                     QStringLiteral("归位失败，详情见日志"), motor->home());
 }
 
 void MainWindow::on_stopBtn_clicked()
 {
-    motor->stop();
+    showMotionResult(QStringLiteral("电机已停止"),
+                     QStringLiteral("停止电机失败，详情见日志"), motor->stop());
 }
 
 void MainWindow::on_moveBtn_clicked()
 {
-    motor->moveToUm(ui->positionSpinBox->value());
+    showMotionResult(QStringLiteral("已移动到 %1 μm")
+                         .arg(QString::number(ui->positionSpinBox->value(), 'f', 1)),
+                     QStringLiteral("移动失败，详情见日志"), motor->moveToUm(ui->positionSpinBox->value()));
 }
 
 void MainWindow::on_setVelocityBtn_clicked()
 {
-    motor->setVelocity(ui->velocitySpinBox->value(), ui->accelerationSpinBox->value());
+    showMotionResult(QStringLiteral("速度参数已更新"),
+                     QStringLiteral("设置速度失败，详情见日志"),
+                     motor->setVelocity(ui->velocitySpinBox->value(), ui->accelerationSpinBox->value()));
 }
 
 void MainWindow::on_jogForwardBtn_clicked()
 {
-    motor->moveRelativeUm(+ui->jogStepSpinBox->value());
+    showMotionResult(QStringLiteral("正向点动 %1 μm")
+                         .arg(QString::number(ui->jogStepSpinBox->value(), 'f', 1)),
+                     QStringLiteral("点动失败，详情见日志"), motor->moveRelativeUm(+ui->jogStepSpinBox->value()));
 }
 
 void MainWindow::on_jogBackwardBtn_clicked()
 {
-    motor->moveRelativeUm(-ui->jogStepSpinBox->value());
+    showMotionResult(QStringLiteral("反向点动 %1 μm")
+                         .arg(QString::number(ui->jogStepSpinBox->value(), 'f', 1)),
+                     QStringLiteral("点动失败，详情见日志"), motor->moveRelativeUm(-ui->jogStepSpinBox->value()));
 }
 
 void MainWindow::updateDeviceStatus()
@@ -217,6 +227,14 @@ void MainWindow::onMotorLog(const QString &message)
     ui->logTextEdit->appendPlainText(formatted);
     // 同时写入 Logger（会分级落盘）
     Logger::instance().info(message);
+}
+
+void MainWindow::showMotionResult(const QString &okMsg, const QString &failMsg, bool ok)
+{
+    // 失败用红色突出，成功用默认色；信息只在状态栏停留数秒，完整原因仍写日志
+    statusBar()->setStyleSheet(ok ? QString()
+                                  : QStringLiteral("QStatusBar { color: #c00000; }"));
+    statusBar()->showMessage(ok ? okMsg : failMsg, ok ? 5000 : 10000);
 }
 
 void MainWindow::onConnectedChanged(bool connected)
