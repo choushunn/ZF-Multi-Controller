@@ -109,11 +109,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->mainSplitter->setSizes({430, 730});  // 初始分配，防止折叠
     // 分隔手柄使用 Qt 原生样式，保留可拖拽与最小宽度设置
 
-    // 左侧参数栅格：两个输入列等宽对齐
+    // 左侧参数栅格：标签列固定、输入列占满剩余宽度
     ui->motionGrid->setColumnStretch(0, 0);
     ui->motionGrid->setColumnStretch(1, 1);
-    ui->motionGrid->setColumnStretch(2, 0);
-    ui->motionGrid->setColumnStretch(3, 1);
 
     // 菜单栏已在 .ui 中定义：文件/视图/帮助，此处接线动作
     m_fullscreenAct = ui->actionFullscreen;   // 视图 → 全屏模式（checkable，F11 切换）
