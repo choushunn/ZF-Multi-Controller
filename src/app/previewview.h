@@ -3,7 +3,7 @@
 #include <QGraphicsView>
 
 class QGraphicsScene;
-class QGraphicsPixmapItem;
+class ImageItem;
 
 // 摄像头预览容器：图像图层（本类，自适应显示图像）与刻度尺图层
 // （内部 RulerLayer 透明控件）完全分离，互不影响。
@@ -32,7 +32,7 @@ private:
     void fitImage();
 
     QGraphicsScene *m_scene = nullptr;
-    QGraphicsPixmapItem *m_item = nullptr;
+    ImageItem *m_item = nullptr;
     QSize m_frameSize;
     QWidget *m_ruler = nullptr;  // 刻度尺图层（透明、穿透鼠标事件）
 };

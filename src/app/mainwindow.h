@@ -8,6 +8,8 @@
 
 #include "core/motorconfig.h"
 
+class QThread;
+
 class KCubeMotor;
 namespace mc {
 class ICamera;  // 相机统一接口（icamera.h）
@@ -72,6 +74,9 @@ private:
     struct ExposureCtx { double minMs = 0.0; double maxMs = 0.0; bool valid = false; } exposure_;
     void refreshDeviceList();
     void refreshCameraList();
+    // 枚举结果回填：在工作线程完成后于 UI 线程执行
+    void applyDeviceList(const QStringList &devices);
+    void applyCameraList(const QStringList &ids, const QStringList &names);
     void applyConfig();
     void saveConfig();
     // 集中为关键控件设置 tooltip，解释专业术语（帮助层）
@@ -94,6 +99,10 @@ private:
     QElapsedTimer m_fpsClock;            // 相机帧率统计时钟
     qint64 m_lastFpsMs = -1;             // 上一帧时间戳(ms)
     double m_frameFps = 0.0;             // 平滑后的帧率(EWMA)
+    bool deviceEnumInFlight_ = false;   // KDC101 设备枚举线程是否在跑（防止并发枚举）
+    bool cameraEnumInFlight_ = false;   // 相机枚举线程是否在跑（防止并发枚举）
+    QThread *deviceEnumThread_ = nullptr;  // 设备枚举工作线程（析构时等待结束，防悬垂）
+    QThread *cameraEnumThread_ = nullptr;  // 相机枚举工作线程（析构时等待结束，防悬垂）
 };
 
 #endif // MAINWINDOW_H

@@ -10,6 +10,8 @@ namespace mc {
 // DVP2 / TOUPCam 各自提供实现，UI 面向接口编程。
 // 采集不应在 UI 线程同步执行，实现类内部负责后台采帧线程，
 // 通过 frameReady 信号把帧回传 UI 刷新。
+// 帧交付采用「最新帧优先」：UI 处理完一帧后须调用 frameConsumed()，
+// 生产者据此在下一帧到达时丢弃尚未被消费的中间帧，保证实时性并防止事件队列积压。
 class ICamera : public QObject {
     Q_OBJECT
 
@@ -33,6 +35,9 @@ public:
     virtual bool startCapture() = 0;
     virtual void stopCapture() = 0;
     virtual bool isCapturing() const = 0;
+
+    // 消费者处理完一帧后调用（「最新帧优先」门控；默认不丢帧）
+    virtual void frameConsumed() {}
 
     // 保存当前帧到文件
     virtual bool saveFrame(const QString &filePath) = 0;

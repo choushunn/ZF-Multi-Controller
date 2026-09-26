@@ -72,12 +72,12 @@ void Logger::log(LogLevel level, const QString &text)
     // 控制台输出
     QTextStream(stdout) << formatted << Qt::endl;
 
-    // 文件持久化
+    // 文件持久化（QTextStream 自带缓冲，避免每行同步磁盘 IO 阻塞调用线程；
+    // 用 '\n' 而非 Qt::endl 防止逐行 flush；正常退出由 shutdown() 统一落盘）
     if (initialized_ && file_.isOpen()) {
         rotateIfNeeded();
         QTextStream ts(&file_);
-        ts << formatted << Qt::endl;
-        file_.flush();
+        ts << formatted << '\n';
     }
 
     // 发射信号供 UI 订阅

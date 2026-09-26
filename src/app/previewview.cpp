@@ -1,9 +1,8 @@
 #include "previewview.h"
 
 #include <QGraphicsScene>
-#include <QGraphicsPixmapItem>
+#include <QGraphicsItem>
 #include <QImage>
-#include <QPixmap>
 #include <QPainter>
 #include <QPen>
 #include <QColor>
@@ -60,13 +59,49 @@ private:
 
 } // namespace
 
+// 图像图层项：直接持有 QImage（隐式共享，无深拷贝），
+// paint() 用 drawImage 由场景变换完成缩放，一次遍历完成格式转换+缩放，
+// 避免每帧 QPixmap::fromImage 的全量像素转换。
+// 类定义必须位于全局作用域，与 previewview.h 的前向声明匹配。
+class ImageItem : public QGraphicsItem
+{
+public:
+    void setImage(const QImage &img)
+    {
+        prepareGeometryChange();
+        m_image = img;
+        update();
+    }
+
+    bool hasImage() const { return !m_image.isNull(); }
+    QSize imageSize() const { return m_image.size(); }
+
+    QRectF boundingRect() const override
+    {
+        return QRectF(QPointF(0, 0), QSizeF(m_image.size()));
+    }
+
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *) override
+    {
+        if (m_image.isNull())
+            return;
+        painter->drawImage(boundingRect(), m_image);
+    }
+
+private:
+    QImage m_image;
+};
+
 PreviewView::PreviewView(QWidget *parent)
     : QGraphicsView(parent)
 {
     m_scene = new QGraphicsScene(this);
     setScene(m_scene);
-    m_item = m_scene->addPixmap(QPixmap());
+    m_item = new ImageItem;
+    m_scene->addItem(m_item);
     m_item->setVisible(false);
+    // 缓存缩放后的渲染结果：刻度尺图层重绘 / 窗口 resize 不再重复缩放采样
+    m_item->setCacheMode(QGraphicsItem::ItemCoordinateCache);
 
     setBackgroundBrush(QColor(QStringLiteral("#ababab")));
     setRenderHint(QPainter::SmoothPixmapTransform);
@@ -84,8 +119,7 @@ void PreviewView::showFrame(const QImage &frame)
 {
     if (frame.isNull())
         return;
-    const QPixmap pix = QPixmap::fromImage(frame);
-    m_item->setPixmap(pix);
+    m_item->setImage(frame);
     m_item->setVisible(true);
     m_frameSize = frame.size();
     fitImage();
@@ -115,10 +149,10 @@ void PreviewView::resizeEvent(QResizeEvent *event)
 
 void PreviewView::fitImage()
 {
-    if (!m_item->isVisible() || m_item->pixmap().isNull())
+    if (!m_item->isVisible() || !m_item->hasImage())
         return;
     const QSize vp = viewport()->size();
-    const QSizeF img = m_item->pixmap().size();
+    const QSizeF img = QSizeF(m_item->imageSize());
     if (vp.width() <= 0 || vp.height() <= 0 || img.isNull())
         return;
     // 可用区域：四周留出对称刻度带（左右 kPadX、上下 kPadY）
@@ -136,7 +170,7 @@ void PreviewView::fitImage()
 
 void PreviewView::drawRulers(QPainter &painter)
 {
-    if (!m_item->isVisible() || m_item->pixmap().isNull())
+    if (!m_item->isVisible() || !m_item->hasImage())
         return;
     // 图像在屏幕上占据的矩形（位于刻度带内侧，与图像像素一一对应）
     const QRectF sceneRect = m_item->sceneBoundingRect();

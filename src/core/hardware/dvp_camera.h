@@ -3,6 +3,7 @@
 #include "core/icamera.h"
 
 #include <QImage>
+#include <QMutex>
 #include <atomic>
 #include <thread>
 
@@ -30,6 +31,8 @@ public:
 
     bool saveFrame(const QString &filePath) override;
     QString description() const override { return description_; }
+    // 消费者（UI）处理完上一帧后调用，生产者据此判断是否允许写下一帧
+    void frameConsumed() override { framePending_.store(false, std::memory_order_release); }
 
 private:
     unsigned int handle_ = 0;  // dvpHandle
@@ -37,8 +40,13 @@ private:
     std::atomic<bool> capturing_{false};
     std::thread captureThread_;
     QString description_;
-    QImage lastFrame_;  // 用于 saveFrame
+    QImage lastFrame_;      // 最近一次 emit 的帧（saveFrame 使用，QMutex 保证读写互斥）
+    QMutex frameMutex_;     // 保护 lastFrame_ 的跨线程读写（采集线程写 / saveFrame 读）
+    QImage frameBuf_[2];    // 双缓冲：采集线程写入非显示缓冲，UI 线程读显示缓冲
+    int slot_ = 0;          // 下一帧写入的缓冲槽（写入后取反）
+    std::atomic<bool> framePending_{false};  // 消费者尚未消费上一帧时为 true（丢帧门控）
 
-    // 将 DVP 帧转为 QImage
-    static QImage frameToImage(int width, int height, int format, const void *buffer, int bytes);
+    // 将 DVP 帧写入 dst（复用 dst 缓冲，仅在尺寸/格式变化时重建）
+    static bool renderFrameTo(QImage &dst, int width, int height, int format,
+                              const void *buffer, int bytes);
 };

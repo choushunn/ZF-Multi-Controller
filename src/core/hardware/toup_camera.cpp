@@ -4,6 +4,8 @@
 #include <QDir>
 #include <QFileInfo>
 
+#include <cstring>
+
 namespace {
 constexpr unsigned kMaxCameras = 16;
 constexpr unsigned kSdkOk = 0;
@@ -320,6 +322,7 @@ void ToupCamera::stopCapture()
 
 bool ToupCamera::saveFrame(const QString &filePath)
 {
+    QMutexLocker lock(&frameMutex_);  // 与回调线程的 lastFrame_ 写入互斥
     if (lastFrame_.isNull())
         return false;
     QDir().mkpath(QFileInfo(filePath).absolutePath());
@@ -331,11 +334,23 @@ void __stdcall ToupCamera::onFrame(const void *data, const FrameInfo *info, int,
     auto *self = static_cast<ToupCamera *>(context);
     if (!self || !data || !info || !self->capturing_)
         return;
-    const QImage image(static_cast<const uchar *>(data), static_cast<int>(info->width),
-                       static_cast<int>(info->height), static_cast<int>(info->width) * 3,
-                       QImage::Format_RGB888);
-    if (!image.isNull()) {
-        self->lastFrame_ = image.copy();
-        emit self->frameReady(self->lastFrame_);
+    // 最新帧优先：UI 尚未消费上一帧则丢弃本帧，避免事件队列积压与内存增长
+    if (self->framePending_.load(std::memory_order_acquire))
+        return;
+
+    QImage *dst = &self->frameBuf_[self->slot_];
+    const QSize size(static_cast<int>(info->width), static_cast<int>(info->height));
+    // 仅尺寸/格式变化时重分配，否则复用缓冲（消除每帧 malloc/free 抖动）
+    if (dst->size() != size || dst->format() != QImage::Format_RGB888)
+        *dst = QImage(size, QImage::Format_RGB888);
+
+    // SDK 缓冲仅在回调期间有效，立即拷贝进自有缓冲
+    memcpy(dst->bits(), data, size_t(size.width()) * size.height() * 3);
+    {
+        QMutexLocker lock(&self->frameMutex_);
+        self->lastFrame_ = *dst;        // 指向最近一次 emit 的缓冲（saveFrame 安全读）
     }
+    self->slot_ = 1 - self->slot_;  // 下次写入另一块缓冲，与消费者持有的缓冲错开
+    self->framePending_.store(true, std::memory_order_release);
+    emit self->frameReady(*dst);
 }

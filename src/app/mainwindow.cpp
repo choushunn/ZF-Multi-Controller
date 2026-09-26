@@ -14,6 +14,13 @@
 #include <QLabel>
 #include <QBoxLayout>
 #include <QEvent>
+#include <QThread>
+#include <QPointer>
+#include <QComboBox>
+#include <QAbstractSpinBox>
+#include <QCheckBox>
+#include <QPushButton>
+#include <QWidget>
 
 #include "core/hardware/kcubemotor.h"
 #include "core/appconfig.h"
@@ -40,6 +47,23 @@ MainWindow::MainWindow(QWidget *parent)
     , camera(nullptr)
 {
     ui->setupUi(this);
+
+    // 日志框封顶，避免长时间运行内存持续增长
+    ui->logTextEdit->setMaximumBlockCount(2000);
+
+    // 统一可编辑控件/label/按钮的显示高度，保证工具栏与左面板控件顶底对齐
+    // 用 setFixedHeight 强制精确高度：setMinimumHeight 会被 sizeHint(约30px) 顶高
+    const auto controls = ui->centralwidget->findChildren<QWidget *>();
+    for (QWidget *w : controls) {
+        if (qobject_cast<QComboBox *>(w) || qobject_cast<QAbstractSpinBox *>(w)
+            || qobject_cast<QPushButton *>(w) || qobject_cast<QLabel *>(w)
+            || qobject_cast<QCheckBox *>(w))
+            w->setFixedHeight(28);
+    }
+
+    // 有设备/相机时才允许连接：枚举结果回填后由 apply*List 决定启用状态
+    ui->connectBtn->setEnabled(false);
+    ui->cameraConnectBtn->setEnabled(false);
 
     // 从配置注入电机参数
     applyConfig();
@@ -140,11 +164,11 @@ MainWindow::MainWindow(QWidget *parent)
     // 左(控制)/右(显示) 可拖拽分割：右侧优先吃窗口增长，分隔手柄可见可调
     ui->mainSplitter->setHandleWidth(7);
     ui->mainSplitter->setChildrenCollapsible(false);
-    ui->mainSplitter->widget(0)->setMinimumWidth(280);  // 左侧贴合内容宽度，避免右侧留有空白列
+    ui->mainSplitter->widget(0)->setMinimumWidth(300);  // 左侧面板最小宽度，防止参数区控件被过度压缩
     ui->mainSplitter->widget(1)->setMinimumWidth(440);
     ui->mainSplitter->setStretchFactor(0, 0);
     ui->mainSplitter->setStretchFactor(1, 1);
-    ui->mainSplitter->setSizes({280, 920});  // 初始分配：左侧贴合内容，右侧相机预览吃满剩余空间
+    ui->mainSplitter->setSizes({300, 900});  // 初始分配：左侧贴合内容，右侧相机预览吃满剩余空间
     // 分隔手柄使用 Qt 原生样式，保留可拖拽与最小宽度设置
 
     // 菜单栏已在 .ui 中定义：文件/视图/帮助，此处接线动作
@@ -201,6 +225,14 @@ void MainWindow::keyPressEvent(QKeyEvent *e)
 
 MainWindow::~MainWindow()
 {
+    // 等待仍在跑的枚举线程结束，避免 worker 完成后对已析构的 MainWindow 投递调用
+    if (deviceEnumThread_ && deviceEnumThread_->isRunning())
+        deviceEnumThread_->wait();
+    delete deviceEnumThread_;
+    if (cameraEnumThread_ && cameraEnumThread_->isRunning())
+        cameraEnumThread_->wait();
+    delete cameraEnumThread_;
+
     saveConfig();
     delete ui;
 }
@@ -304,14 +336,19 @@ void MainWindow::updateDeviceStatus()
     if (!motor->isConnected())
         return;
 
-    ui->positionLabel->setText(QStringLiteral("%1").arg(motor->positionUm(), 0, 'f', 1));
+    // 同一 tick 内只读取一次设备状态（一次 CC_GetStatusBits），避免重复 USB 通信
+    const mc::MotorStatus s = motor->status();
+    const QString info = s.describe();
+    // 位置同样只读一次，供两处显示复用
+    const double posUm = motor->positionUm();
+
+    ui->positionLabel->setText(QStringLiteral("%1").arg(posUm, 0, 'f', 1));
     // 底部设备状态行同步实时位置
-    ui->bottomPositionLabel->setText(QStringLiteral("位置: %1 μm").arg(motor->positionUm(), 0, 'f', 1));
+    ui->bottomPositionLabel->setText(QStringLiteral("位置: %1 μm").arg(posUm, 0, 'f', 1));
     // 底部设备状态行同步实时机械状态
-    ui->bottomMotionLabel->setText(QStringLiteral("状态: %1").arg(motor->status().describe()));
+    ui->bottomMotionLabel->setText(QStringLiteral("状态: %1").arg(info));
 
     static QString lastStatusInfo;
-    const QString info = motor->status().describe();
     if (info != lastStatusInfo) {
         onMotorLog(info);
         lastStatusInfo = info;
@@ -379,7 +416,7 @@ void MainWindow::enableCameraControls(bool enabled)
 {
     ui->captureBtn->setEnabled(enabled);
     ui->saveImageBtn->setEnabled(enabled);
-    ui->cameraConnectBtn->setText(enabled ? QStringLiteral("断开相机") : QStringLiteral("连接相机"));
+    ui->cameraConnectBtn->setText(enabled ? QStringLiteral("断开") : QStringLiteral("连接"));
     // 断开相机时把「暂停」按钮复位
     ui->captureBtn->setText(QStringLiteral("暂停"));
     // 参数区只在连接成功且读到有效参数时可用
@@ -499,20 +536,44 @@ bool MainWindow::cameraControlsValid() const
 
 void MainWindow::refreshDeviceList()
 {
-    const QStringList devices = motor->availableDevices();
+    if (deviceEnumInFlight_)
+        return;  // 已有设备枚举线程在跑，避免并发枚举（厂商 SDK 非线程安全）
+    deviceEnumInFlight_ = true;
 
+    // worker 结束前由析构 wait() 保证不悬垂；回填回调用 QPointer 双保险
+    QPointer<MainWindow> self(this);
+    QPointer<KCubeMotor> guard(motor);  // 窗口销毁后 worker 不再触碰对象
+    deviceEnumThread_ = QThread::create([self, guard]() {
+        QStringList devices;
+        if (guard)
+            devices = guard->availableDevices();
+        QMetaObject::invokeMethod(self, [self, devices]() {
+            if (!self)
+                return;
+            self->applyDeviceList(devices);
+        }, Qt::QueuedConnection);
+    });
+    connect(deviceEnumThread_, &QThread::finished, deviceEnumThread_, &QObject::deleteLater);
+    deviceEnumThread_->start();
+}
+
+void MainWindow::applyDeviceList(const QStringList &devices)
+{
+    deviceEnumInFlight_ = false;
     const QString current = ui->serialNoComboBox->currentText();
     ui->serialNoComboBox->clear();
 
     if (devices.isEmpty()) {
         onMotorLog(QStringLiteral("未发现任何设备"));
         QMessageBox::information(this, QStringLiteral("信息"), QStringLiteral("未发现任何KDC101设备"));
+        ui->connectBtn->setEnabled(false);
         return;
     }
 
     onMotorLog(QStringLiteral("发现 %1 个设备").arg(devices.size()));
     for (int i = 0; i < devices.size(); ++i)
         ui->serialNoComboBox->addItem(devices[i]);
+    ui->connectBtn->setEnabled(true);
 
     // 优先选择配置中的默认设备，其次保留原有选择，否则选第一个
     const QString &defaultSerial = AppConfig::instance().defaultSerial();
@@ -525,21 +586,47 @@ void MainWindow::refreshCameraList()
 {
     if (!camera)
         return;
+    if (cameraEnumInFlight_)
+        return;  // 已有相机枚举线程在跑，避免并发枚举
+    cameraEnumInFlight_ = true;
 
-    const QStringList cams = camera->availableCameras();
-    if (cams.isEmpty())
+    // worker 结束前由析构 wait() 保证不悬垂；回填回调用 QPointer 双保险
+    QPointer<MainWindow> self(this);
+    QPointer<mc::ICamera> guard(camera);
+    cameraEnumThread_ = QThread::create([self, guard]() {
+        QStringList ids, names;
+        if (guard) {
+            ids = guard->availableCameras();
+            names = guard->availableCameraNames();
+        }
+        QMetaObject::invokeMethod(self, [self, ids, names]() {
+            if (!self)
+                return;
+            self->applyCameraList(ids, names);
+        }, Qt::QueuedConnection);
+    });
+    connect(cameraEnumThread_, &QThread::finished, cameraEnumThread_, &QObject::deleteLater);
+    cameraEnumThread_->start();
+}
+
+void MainWindow::applyCameraList(const QStringList &ids, const QStringList &names)
+{
+    cameraEnumInFlight_ = false;
+    if (ids.isEmpty()) {
         onMotorLog(QStringLiteral("未发现相机设备"));
-    else
-        onMotorLog(QStringLiteral("发现 %1 个相机").arg(cams.size()));
+        ui->cameraConnectBtn->setEnabled(false);
+    } else {
+        onMotorLog(QStringLiteral("发现 %1 个相机").arg(ids.size()));
+        ui->cameraConnectBtn->setEnabled(true);
+    }
 
     // 填充相机型号下拉框：显示型号名，真实标识(id)存 userData 供连接使用
-    const QStringList names = camera->availableCameraNames();
     const QString prevId = ui->cameraModelComboBox->currentData().toString();
     ui->cameraModelComboBox->clear();
-    for (int i = 0; i < cams.size(); ++i) {
+    for (int i = 0; i < ids.size(); ++i) {
         const QString name = i < names.size() && !names[i].trimmed().isEmpty()
-                ? names[i] : cams[i];
-        ui->cameraModelComboBox->addItem(name, cams[i]);
+                ? names[i] : ids[i];
+        ui->cameraModelComboBox->addItem(name, ids[i]);
     }
     int idx = ui->cameraModelComboBox->findData(prevId);
     // 有设备时默认选中第一个；prevId 仍然存在则沿用原选择
@@ -553,16 +640,19 @@ void MainWindow::onCameraConnectBtnClicked()
         return;
 
     if (!camera->isConnected()) {
-        // 获取可用相机列表并连接第一个
-        const QStringList cams = camera->availableCameras();
-        if (cams.isEmpty()) {
-            QMessageBox::warning(this, QStringLiteral("警告"), QStringLiteral("未发现相机设备"));
-            return;
-        }
-
-        // 优先使用下拉框选中的型号，其次配置中的 UserID，最后第一个
+        // 优先使用下拉框选中的型号；仅当下拉为空且无枚举线程在跑时才同步枚举
         QString id = ui->cameraModelComboBox->currentData().toString();
         if (id.isEmpty()) {
+            if (cameraEnumInFlight_) {
+                QMessageBox::warning(this, QStringLiteral("警告"),
+                                     QStringLiteral("相机列表正在刷新，请稍候再试"));
+                return;
+            }
+            const QStringList cams = camera->availableCameras();
+            if (cams.isEmpty()) {
+                QMessageBox::warning(this, QStringLiteral("警告"), QStringLiteral("未发现相机设备"));
+                return;
+            }
             const QString &cfgUserId = AppConfig::instance().data().cameraUserId;
             id = cams.contains(cfgUserId) ? cfgUserId : cams.first();
         }
@@ -637,6 +727,9 @@ void MainWindow::onCameraFrameReady(const QImage &frame)
     }
     m_lastFpsMs = now;
     ui->frameRateLabel->setText(QStringLiteral("帧率: %1 FPS").arg(m_frameFps, 0, 'f', 1));
+
+    // 通知生产者本帧已消费，允许写入下一帧（最新帧优先，丢帧门控）
+    camera->frameConsumed();
 }
 
 void MainWindow::onCameraConnectedChanged(bool connected)
