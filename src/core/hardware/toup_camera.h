@@ -22,6 +22,17 @@ public:
     void disconnect() override;
     bool isConnected() const override { return connected_; }
 
+    // 相机参数（曝光/增益/分辨率）
+    bool exposureRange(double *minMs, double *maxMs) override;
+    bool setExposure(double ms) override;
+    double exposure() const override;
+    bool gainRange(double *minPct, double *maxPct) override;
+    bool setGain(double pct) override;
+    double gain() const override;
+    QStringList resolutions() const override;
+    int currentResolution() const override;
+    bool setResolution(int index) override;
+
     bool startCapture() override;
     void stopCapture() override;
     bool isCapturing() const override { return capturing_; }

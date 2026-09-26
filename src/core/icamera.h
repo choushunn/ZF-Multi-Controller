@@ -37,6 +37,20 @@ public:
     // 保存当前帧到文件
     virtual bool saveFrame(const QString &filePath) = 0;
 
+    // —— 相机参数（默认“不支持”，实现类可按需重写）——
+    // 曝光时间范围（毫秒）；返回 false 表示不支持
+    virtual bool exposureRange(double *minMs, double *maxMs) { (void)minMs; (void)maxMs; return false; }
+    virtual bool setExposure(double ms) { (void)ms; return false; }
+    virtual double exposure() const { return -1.0; }
+    // 增益范围（%）；返回 false 表示不支持
+    virtual bool gainRange(double *minPct, double *maxPct) { (void)minPct; (void)maxPct; return false; }
+    virtual bool setGain(double pct) { (void)pct; return false; }
+    virtual double gain() const { return -1.0; }
+    // 分辨率列表（如 "1920x1080" 显示名），与 setResolution(index) 一一对应
+    virtual QStringList resolutions() const { return {}; }
+    virtual int currentResolution() const { return -1; }
+    virtual bool setResolution(int index) { (void)index; return false; }
+
     // 相机信息
     virtual QString description() const = 0;  // 友好描述（型号/序列号）
 

@@ -81,6 +81,14 @@ MainWindow::MainWindow(QWidget *parent)
                 this, &MainWindow::onCameraConnectedChanged);
         connect(camera, &mc::ICamera::logMessage,
                 this, &MainWindow::onCameraLog);
+
+        // 相机参数控制：曝光/增益/分辨率（无相机或模型不支持时安全失效）
+        connect(ui->exposureSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                this, [this](double ms) { if (camera) camera->setExposure(ms); });
+        connect(ui->gainSpinBox, &QSpinBox::valueChanged,
+                this, [this](int v) { if (camera) camera->setGain(v); });
+        connect(ui->resolutionComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                this, [this](int idx) { if (idx >= 0 && camera) camera->setResolution(idx); });
     }
 
     // 设置位置输入范围（微米），从配置读取
@@ -342,6 +350,51 @@ void MainWindow::enableCameraControls(bool enabled)
     ui->cameraConnectBtn->setText(enabled ? QStringLiteral("断开相机") : QStringLiteral("连接相机"));
     // 断开相机时把「暂停」按钮复位
     ui->captureBtn->setText(QStringLiteral("暂停"));
+    // 参数区只在连接成功且读到有效参数时可用
+    ui->cameraControlBox->setEnabled(enabled && cameraControlsValid());
+}
+
+// 相机连接后按 SDK 实际能力初始化曝光/增益/分辨率控件
+void MainWindow::setupCameraControls()
+{
+    // 曝光：范围 + 当前值
+    double minMs = 0, maxMs = 0;
+    const bool hasExposure = camera->exposureRange(&minMs, &maxMs) && maxMs > minMs;
+    if (hasExposure) {
+        ui->exposureSpinBox->setRange(minMs, maxMs);
+        const double cur = camera->exposure();
+        if (cur >= minMs)
+            ui->exposureSpinBox->setValue(cur);
+    }
+    // 增益
+    double gmin = 0, gmax = 0;
+    const bool hasGain = camera->gainRange(&gmin, &gmax) && gmax > gmin;
+    if (hasGain) {
+        ui->gainSpinBox->setRange(int(gmin), int(gmax));
+        const double g = camera->gain();
+        if (g >= gmin)
+            ui->gainSpinBox->setValue(int(qRound(g)));
+    }
+    // 分辨率
+    ui->resolutionComboBox->clear();
+    const QStringList res = camera->resolutions();
+    ui->resolutionComboBox->addItems(res);
+    const int curIdx = camera->currentResolution();
+    if (curIdx >= 0 && curIdx < res.size())
+        ui->resolutionComboBox->setCurrentIndex(curIdx);
+
+    const bool anyValid = hasExposure || hasGain || !res.isEmpty();
+    ui->exposureSpinBox->setEnabled(hasExposure);
+    ui->gainSpinBox->setEnabled(hasGain);
+    ui->resolutionComboBox->setEnabled(!res.isEmpty());
+    ui->cameraControlBox->setEnabled(anyValid);
+}
+
+// 参数控件当前是否有效（用于使能相机控制框）
+bool MainWindow::cameraControlsValid() const
+{
+    return ui->exposureSpinBox->isEnabled() || ui->gainSpinBox->isEnabled()
+        || ui->resolutionComboBox->count() > 0;
 }
 
 void MainWindow::refreshDeviceList()
@@ -494,6 +547,10 @@ void MainWindow::onCameraConnectedChanged(bool connected)
     ui->cameraStatusLabel->setStyleSheet(connected
         ? QStringLiteral("color: #22A55A;")
         : QStringLiteral("color: #9AA3B0;"));
+    if (connected)
+        setupCameraControls();
+    else
+        ui->cameraControlBox->setEnabled(false);
     enableCameraControls(connected);
 }
 

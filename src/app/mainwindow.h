@@ -59,6 +59,9 @@ private slots:
 private:
     void enableControls(bool enabled);
     void enableCameraControls(bool enabled);
+    // 相机连接后初始化曝光/增益/分辨率控件
+    void setupCameraControls();
+    bool cameraControlsValid() const;
     void refreshDeviceList();
     void refreshCameraList();
     void applyConfig();
