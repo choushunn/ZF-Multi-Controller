@@ -5,8 +5,9 @@
 class QGraphicsScene;
 class QGraphicsPixmapItem;
 
-// 摄像头预览视图：图像自适应居中显示，顶部/左侧叠加像素刻度尺。
-// 无帧时显示默认灰色背景；有帧时按当前缩放比例自动选择整齐刻度步长。
+// 摄像头预览容器：图像图层（本类，自适应显示图像）与刻度尺图层
+// （内部 RulerLayer 透明控件）完全分离，互不影响。
+// 图像 fit 到四周留出刻度带的内区；有帧时按当前缩放比例自动选择整齐刻度步长。
 class PreviewView : public QGraphicsView
 {
     Q_OBJECT
@@ -22,13 +23,16 @@ public:
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
-    void paintEvent(QPaintEvent *event) override;
+
+public:
+    // 在刻度尺图层上绘制外围刻度（图层坐标 = 视口坐标）；供内部刻度图层调用
+    void drawRulers(QPainter &painter);
 
 private:
     void fitImage();
-    void drawRulers(QPainter &painter);
 
     QGraphicsScene *m_scene = nullptr;
     QGraphicsPixmapItem *m_item = nullptr;
     QSize m_frameSize;
+    QWidget *m_ruler = nullptr;  // 刻度尺图层（透明、穿透鼠标事件）
 };

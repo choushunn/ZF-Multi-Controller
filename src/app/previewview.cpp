@@ -10,6 +10,7 @@
 #include <QFont>
 #include <QFontMetrics>
 #include <QResizeEvent>
+#include <QWidget>
 #include <cmath>
 
 namespace {
@@ -32,6 +33,33 @@ constexpr int kPadY = 22;           // 顶部刻度区高度（容纳刻度线+�
 
 } // namespace
 
+namespace {
+
+// 刻度尺图层：独立透明控件，绘制与图像互不影响
+class RulerLayer : public QWidget
+{
+public:
+    explicit RulerLayer(PreviewView *owner, QWidget *parent)
+        : QWidget(parent)
+        , m_owner(owner)
+    {
+        setAttribute(Qt::WA_TransparentForMouseEvents);  // 鼠标穿透到下层预览
+        setAttribute(Qt::WA_NoSystemBackground);
+    }
+
+protected:
+    void paintEvent(QPaintEvent *) override
+    {
+        QPainter p(this);
+        m_owner->drawRulers(p);
+    }
+
+private:
+    PreviewView *m_owner;
+};
+
+} // namespace
+
 PreviewView::PreviewView(QWidget *parent)
     : QGraphicsView(parent)
 {
@@ -45,6 +73,11 @@ PreviewView::PreviewView(QWidget *parent)
     // 关闭滚动条：始终适配视口
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    // 刻度尺图层悬浮于预览之上
+    m_ruler = new RulerLayer(this, this);
+    m_ruler->setGeometry(rect());
+    m_ruler->raise();
 }
 
 void PreviewView::showFrame(const QImage &frame)
@@ -56,14 +89,14 @@ void PreviewView::showFrame(const QImage &frame)
     m_item->setVisible(true);
     m_frameSize = frame.size();
     fitImage();
-    viewport()->update();
+    m_ruler->update();
 }
 
 void PreviewView::clearFrame()
 {
     m_item->setVisible(false);
     m_frameSize = QSize();
-    viewport()->update();
+    m_ruler->update();
 }
 
 QSize PreviewView::frameSize() const
@@ -74,6 +107,9 @@ QSize PreviewView::frameSize() const
 void PreviewView::resizeEvent(QResizeEvent *event)
 {
     QGraphicsView::resizeEvent(event);
+    // 刻度尺图层与预览视口同步几何（图层坐标与视口坐标一致）
+    m_ruler->setGeometry(rect());
+    m_ruler->raise();
     fitImage();
 }
 
@@ -85,7 +121,7 @@ void PreviewView::fitImage()
     const QSizeF img = m_item->pixmap().size();
     if (vp.width() <= 0 || vp.height() <= 0 || img.isNull())
         return;
-    // 可用区域：四周留出刻度带（左右对称 kPadX、上下对称 kPadY）
+    // 可用区域：四周留出对称刻度带（左右 kPadX、上下 kPadY）
     const qreal sx = (vp.width() - 2.0 * kPadX) / img.width();
     const qreal sy = (vp.height() - 2.0 * kPadY) / img.height();
     const qreal s = qMin(sx, sy);
@@ -95,21 +131,13 @@ void PreviewView::fitImage()
     t.translate(kPadX, kPadY);  // 图像左上角位于刻度带内侧
     t.scale(s, s);
     setTransform(t);
-    viewport()->update();
-}
-
-void PreviewView::paintEvent(QPaintEvent *event)
-{
-    QGraphicsView::paintEvent(event);
-    if (!m_item->isVisible() || m_item->pixmap().isNull())
-        return;
-    QPainter painter(viewport());
-    painter.setRenderHint(QPainter::Antialiasing, true);
-    drawRulers(painter);
+    m_ruler->update();
 }
 
 void PreviewView::drawRulers(QPainter &painter)
 {
+    if (!m_item->isVisible() || m_item->pixmap().isNull())
+        return;
     // 图像在屏幕上占据的矩形（位于刻度带内侧，与图像像素一一对应）
     const QRectF sceneRect = m_item->sceneBoundingRect();
     QRectF screen = QRectF(mapFromScene(sceneRect.topLeft()), mapFromScene(sceneRect.bottomRight()))
