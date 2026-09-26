@@ -787,6 +787,9 @@ QPushButton:hover { color: white; background-color: #E5484D; }</string>
         </property>
         <item>
          <widget class="QLabel" name="cameraDisplayLabel">
+          <property name="styleSheet">
+           <string notr="true">background-color: #ababab;</string>
+          </property>
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
             <horstretch>0</horstretch>
