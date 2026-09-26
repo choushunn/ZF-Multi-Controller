@@ -26,6 +26,8 @@ public:
     bool exposureRange(double *minMs, double *maxMs) override;
     bool setExposure(double ms) override;
     double exposure() const override;
+    bool autoExposureEnabled() const override;
+    bool setAutoExposure(bool on) override;
     bool gainRange(double *minPct, double *maxPct) override;
     bool setGain(double pct) override;
     double gain() const override;

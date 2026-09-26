@@ -228,30 +228,41 @@ QPushButton:hover { color: white; background-color: #E5484D; }</string>
             <number>8</number>
            </property>
            <item row="0" column="0">
-            <widget class="QLabel" name="labelExposure">
-             <property name="minimumSize">
-              <size>
-               <width>92</width>
-               <height>0</height>
-              </size>
-             </property>
+            <widget class="QCheckBox" name="autoExposureCheckBox">
              <property name="text">
-              <string>曝光时间(ms):</string>
+              <string>自动曝光</string>
              </property>
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QDoubleSpinBox" name="exposureSpinBox">
-             <property name="decimals">
-              <number>3</number>
+            <layout class="QHBoxLayout" name="exposureRow">
+             <property name="spacing">
+              <number>6</number>
              </property>
-             <property name="maximum">
-              <double>1000.000000000000000</double>
-             </property>
-             <property name="suffix">
-              <string> ms</string>
-             </property>
-            </widget>
+             <item>
+              <widget class="QSlider" name="exposureSlider">
+               <property name="orientation">
+                <enum>Qt::Orientation::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="exposureValueLabel">
+               <property name="minimumSize">
+                <size>
+                 <width>72</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>0.000 ms</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
            <item row="1" column="0">
             <widget class="QLabel" name="labelGain">

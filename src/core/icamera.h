@@ -42,6 +42,9 @@ public:
     virtual bool exposureRange(double *minMs, double *maxMs) { (void)minMs; (void)maxMs; return false; }
     virtual bool setExposure(double ms) { (void)ms; return false; }
     virtual double exposure() const { return -1.0; }
+    // 自动曝光
+    virtual bool autoExposureEnabled() const { return false; }
+    virtual bool setAutoExposure(bool on) { (void)on; return false; }
     // 增益范围（%）；返回 false 表示不支持
     virtual bool gainRange(double *minPct, double *maxPct) { (void)minPct; (void)maxPct; return false; }
     virtual bool setGain(double pct) { (void)pct; return false; }

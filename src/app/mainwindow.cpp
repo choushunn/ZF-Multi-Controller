@@ -82,9 +82,20 @@ MainWindow::MainWindow(QWidget *parent)
         connect(camera, &mc::ICamera::logMessage,
                 this, &MainWindow::onCameraLog);
 
-        // 相机参数控制：曝光/增益/分辨率（无相机或模型不支持时安全失效）
-        connect(ui->exposureSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-                this, [this](double ms) { if (camera) camera->setExposure(ms); });
+        // 相机参数控制：自动曝光/曝光滑块/增益/分辨率（无相机或模型不支持时安全失效）
+        connect(ui->autoExposureCheckBox, &QCheckBox::toggled,
+                this, [this](bool on) {
+                    if (camera)
+                        camera->setAutoExposure(on);
+                    ui->exposureSlider->setEnabled(!on);  // 自动曝光时滑块禁用
+                });
+        connect(ui->exposureSlider, &QSlider::valueChanged,
+                this, [this](int us) {
+                    const double ms = us / 1000.0;
+                    if (camera)
+                        camera->setExposure(ms);
+                    ui->exposureValueLabel->setText(QStringLiteral("%1 ms").arg(ms, 0, 'f', 3));
+                });
         connect(ui->gainSpinBox, &QSpinBox::valueChanged,
                 this, [this](int v) { if (camera) camera->setGain(v); });
         connect(ui->resolutionComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -357,14 +368,25 @@ void MainWindow::enableCameraControls(bool enabled)
 // 相机连接后按 SDK 实际能力初始化曝光/增益/分辨率控件
 void MainWindow::setupCameraControls()
 {
-    // 曝光：范围 + 当前值
+    // 曝光：加载相机后默认不自动曝光，滑块(μs 粒度)手动动态调整
+    ui->autoExposureCheckBox->setChecked(false);
+    ui->exposureSlider->setEnabled(false);
     double minMs = 0, maxMs = 0;
     const bool hasExposure = camera->exposureRange(&minMs, &maxMs) && maxMs > minMs;
     if (hasExposure) {
-        ui->exposureSpinBox->setRange(minMs, maxMs);
+        const int minUs = qMax(1, int(minMs * 1000.0));
+        const int maxUs = qMax(minUs, int(maxMs * 1000.0));
+        ui->exposureSlider->setRange(minUs, maxUs);
         const double cur = camera->exposure();
-        if (cur >= minMs)
-            ui->exposureSpinBox->setValue(cur);
+        ui->exposureSlider->setValue((cur >= minMs && cur <= maxMs) ? int(cur * 1000.0) : minUs);
+        ui->autoExposureCheckBox->setEnabled(true);
+        ui->exposureSlider->setEnabled(true);
+        camera->setAutoExposure(false);  // 默认手动模式
+        ui->autoExposureCheckBox->setChecked(false);
+    } else {
+        ui->autoExposureCheckBox->setEnabled(false);
+        ui->exposureSlider->setEnabled(false);
+        ui->exposureValueLabel->setText(QStringLiteral("不支持"));
     }
     // 增益
     double gmin = 0, gmax = 0;
@@ -384,7 +406,7 @@ void MainWindow::setupCameraControls()
         ui->resolutionComboBox->setCurrentIndex(curIdx);
 
     const bool anyValid = hasExposure || hasGain || !res.isEmpty();
-    ui->exposureSpinBox->setEnabled(hasExposure);
+    ui->autoExposureCheckBox->setEnabled(hasExposure);
     ui->gainSpinBox->setEnabled(hasGain);
     ui->resolutionComboBox->setEnabled(!res.isEmpty());
     ui->cameraControlBox->setEnabled(anyValid);
@@ -393,8 +415,8 @@ void MainWindow::setupCameraControls()
 // 参数控件当前是否有效（用于使能相机控制框）
 bool MainWindow::cameraControlsValid() const
 {
-    return ui->exposureSpinBox->isEnabled() || ui->gainSpinBox->isEnabled()
-        || ui->resolutionComboBox->count() > 0;
+    return ui->autoExposureCheckBox->isEnabled() || ui->exposureSlider->isEnabled()
+        || ui->gainSpinBox->isEnabled() || ui->resolutionComboBox->count() > 0;
 }
 
 void MainWindow::refreshDeviceList()

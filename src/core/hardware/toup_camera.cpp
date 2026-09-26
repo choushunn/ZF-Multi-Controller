@@ -44,6 +44,8 @@ struct ToupCamera::Api {
     using GetGain = int (__stdcall *)(void *, unsigned short *);       // 增益(%)
     using PutGain = int (__stdcall *)(void *, unsigned short);
     using GetGainRange = int (__stdcall *)(void *, unsigned short *, unsigned short *, unsigned short *);
+    using GetAutoExp = int (__stdcall *)(void *, int *, int *);   // Toupcam_get_AutoExpoEnable
+    using PutAutoExp = int (__stdcall *)(void *, int);            // Toupcam_put_AutoExpoEnable
     using GetResInfo = int (__stdcall *)(void *, unsigned, unsigned *, unsigned *);  // Toupcam_get_Resolution
     using PutESize = int (__stdcall *)(void *, unsigned);                         // Toupcam_put_eSize
 
@@ -62,6 +64,8 @@ struct ToupCamera::Api {
     GetGain getGain = nullptr;
     PutGain putGain = nullptr;
     GetGainRange getGainRange = nullptr;
+    GetAutoExp getAutoExp = nullptr;
+    PutAutoExp putAutoExp = nullptr;
 };
 
 ToupCamera::ToupCamera(QObject *parent)
@@ -110,6 +114,8 @@ bool ToupCamera::ensureApi()
     api->getGain = reinterpret_cast<Api::GetGain>(library_->resolve("Toupcam_get_ExpoAGain"));
     api->putGain = reinterpret_cast<Api::PutGain>(library_->resolve("Toupcam_put_ExpoAGain"));
     api->getGainRange = reinterpret_cast<Api::GetGainRange>(library_->resolve("Toupcam_get_ExpoAGainRange"));
+    api->getAutoExp = reinterpret_cast<Api::GetAutoExp>(library_->resolve("Toupcam_get_AutoExpoEnable"));
+    api->putAutoExp = reinterpret_cast<Api::PutAutoExp>(library_->resolve("Toupcam_put_AutoExpoEnable"));
     if (!api->enumerate || !api->open || !api->close || !api->start || !api->stop) {
         emit logMessage(QStringLiteral("ToupTek SDK 缺少所需接口"));
         library_->unload();
@@ -179,6 +185,23 @@ double ToupCamera::exposure() const
         return -1.0;
     unsigned us = 0;
     return sdkOk(api_->getExpTime(handle_, &us)) ? double(us) / 1000.0 : -1.0;
+}
+
+bool ToupCamera::setAutoExposure(bool on)
+{
+    if (!ensureApi() || !api_->putAutoExp || !hasHandle(handle_))
+        return false;
+    return sdkOk(api_->putAutoExp(handle_, on ? 1 : 0));
+}
+
+bool ToupCamera::autoExposureEnabled() const
+{
+    if (!api_ || !api_->getAutoExp || !hasHandle(handle_))
+        return false;
+    int bAuto = 0, bTarget = 0;
+    if (!sdkOk(api_->getAutoExp(handle_, &bAuto, &bTarget)))
+        return false;
+    return (bAuto != 0);
 }
 
 bool ToupCamera::gainRange(double *minPct, double *maxPct)
