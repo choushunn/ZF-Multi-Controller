@@ -149,6 +149,9 @@ data/
 *.dat
 *.csv
 
+# Vendor sample code (kept locally for reference only)
+docs/touptek-samples/
+
 # Application-specific files
 *.settings
 *.session
