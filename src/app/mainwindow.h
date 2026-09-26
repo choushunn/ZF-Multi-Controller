@@ -80,6 +80,7 @@ private:
     void showMotionResult(const QString &okMsg, const QString &failMsg, bool ok);
     // 摄像头显示区：键盘双击放大/退出全屏
     void toggleCameraFullscreen();
+    void updateFullscreenButtonText();
     void restoreCameraToPanel();
 
     Ui::MainWindow *ui;

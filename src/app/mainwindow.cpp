@@ -153,17 +153,17 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_fullscreenAct, &QAction::toggled, this, [this](bool fs) {
         if (fs) showFullScreen();
         else    showNormal();
+        updateFullscreenButtonText();
     });
     // 文件 → 退出
     connect(ui->actionExit, &QAction::triggered, this, [this]() { close(); });
-    // 工具栏 → 退出全屏（红色按钮）：优先退出相机全屏，其次退出主窗口全屏
+    // 工具栏 → 退出全屏/切换全屏（红色按钮）：优先退出相机全屏，其次切换主窗口全屏
     connect(ui->exitFullscreenBtn, &QPushButton::clicked, this, [this]() {
         if (m_cameraFullscreen) {
             toggleCameraFullscreen();   // 恢复相机到右侧面板
             return;
         }
-        if (isFullScreen())
-            m_fullscreenAct->setChecked(false);  // 触发 toggled → showNormal()
+        m_fullscreenAct->setChecked(!isFullScreen());  // 切换主窗口全屏
     });
     // 帮助 → 关于
     connect(ui->actionAbout, &QAction::triggered, this, [this]() {
@@ -175,9 +175,18 @@ MainWindow::MainWindow(QWidget *parent)
     // 首次设备/相机列表刷新延迟到事件循环启动、主窗口已显示之后再执行：
     // 避免"未发现设备"弹窗先于主窗口出现。手动"刷新列表"仍同步刷新并正常弹窗。
     QTimer::singleShot(0, this, [this]() {
+        updateFullscreenButtonText();   // 主窗口已按启动即全屏显示，同步按钮文本
         refreshDeviceList();
         refreshCameraList();
     });
+}
+
+// 工具栏全屏按钮文案：处于全屏（相机或主窗口）显示“退出全屏”，否则“切换全屏”
+void MainWindow::updateFullscreenButtonText()
+{
+    const bool fs = m_cameraFullscreen || isFullScreen();
+    ui->exitFullscreenBtn->setText(fs ? QStringLiteral("退出全屏")
+                                      : QStringLiteral("切换全屏"));
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *e)
@@ -668,6 +677,7 @@ void MainWindow::toggleCameraFullscreen()
     view->showFullScreen();
     view->setFocus(Qt::ShortcutFocusReason);
     m_cameraFullscreen = true;
+    updateFullscreenButtonText();
 }
 
 void MainWindow::restoreCameraToPanel()
@@ -684,6 +694,7 @@ void MainWindow::restoreCameraToPanel()
     m_cameraFullscreen = false;
     m_cameraParent = nullptr;
     m_cameraLayout = nullptr;
+    updateFullscreenButtonText();
 }
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event)
