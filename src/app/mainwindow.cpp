@@ -56,20 +56,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(motor, &KCubeMotor::logMessage, this, &MainWindow::onMotorLog);
     connect(motor, &KCubeMotor::connectedChanged, this, &MainWindow::onConnectedChanged);
 
-    // 连接 Logger 信号（分级日志输出到 UI）
+    // 连接 Logger 信号（分级日志输出到 UI；统一纯文本，不着色）
     connect(&Logger::instance(), &Logger::message, this,
         [this](LogLevel level, const QString &formatted) {
-            // 分级日志着色
-            QString color = QStringLiteral("#1A2233");
-            switch (level) {
-            case LogLevel::Debug: color = QStringLiteral("#8B96A8"); break;
-            case LogLevel::Info:  color = QStringLiteral("#1A2233"); break;
-            case LogLevel::Warn:  color = QStringLiteral("#B26A00"); break;
-            case LogLevel::Error: color = QStringLiteral("#D64045"); break;
-            }
-            const QString html = QStringLiteral("<span style='color:%1'>%2</span>")
-                .arg(color).arg(formatted.toHtmlEscaped());
-            ui->logTextEdit->appendHtml(html);
+            Q_UNUSED(level);
+            ui->logTextEdit->appendPlainText(formatted);
         });
 
     // 连接相机信号
@@ -118,15 +109,26 @@ MainWindow::MainWindow(QWidget *parent)
     ui->mainSplitter->setSizes({430, 730});  // 初始分配，防止折叠
     // 分隔手柄使用 Qt 原生样式，保留可拖拽与最小宽度设置
 
-    // "视图 → 全屏模式"：启动即全屏，可经菜单/快捷键退出
-    QMenu *viewMenu = menuBar()->addMenu(QStringLiteral("视图(&V)"));
-    m_fullscreenAct = viewMenu->addAction(QStringLiteral("全屏模式(&F)"));
-    m_fullscreenAct->setCheckable(true);
+    // 左侧参数栅格：两个输入列等宽对齐
+    ui->motionGrid->setColumnStretch(0, 0);
+    ui->motionGrid->setColumnStretch(1, 1);
+    ui->motionGrid->setColumnStretch(2, 0);
+    ui->motionGrid->setColumnStretch(3, 1);
+
+    // 菜单栏已在 .ui 中定义：文件/视图/帮助，此处接线动作
+    m_fullscreenAct = ui->actionFullscreen;   // 视图 → 全屏模式（checkable，F11 切换）
     m_fullscreenAct->setChecked(true);   // 与 main() 的 showFullScreen() 保持一致
-    m_fullscreenAct->setShortcut(QKeySequence::FullScreen);  // F11
     connect(m_fullscreenAct, &QAction::toggled, this, [this](bool fs) {
         if (fs) showFullScreen();
         else    showNormal();
+    });
+    // 文件 → 退出
+    connect(ui->actionExit, &QAction::triggered, this, [this]() { close(); });
+    // 帮助 → 关于
+    connect(ui->actionAbout, &QAction::triggered, this, [this]() {
+        QMessageBox::about(this, QStringLiteral("关于 Multi-Controller"),
+                           QStringLiteral("Multi-Controller\n版本 0.1.0\n\n"
+                                          "KDC101 电机控制器与工业相机采集上位机。"));
     });
 
     // 首次设备/相机列表刷新延迟到事件循环启动、主窗口已显示之后再执行：
@@ -449,14 +451,9 @@ void MainWindow::onCameraFrameReady(const QImage &frame)
 
 void MainWindow::onCameraConnectedChanged(bool connected)
 {
+    // 状态配色与位置：相机状态已移入底部状态栏
     ui->cameraStatusLabel->setText(connected ? QStringLiteral("相机状态: 已连接") : QStringLiteral("相机状态: 未连接"));
-    // 状态配色：已连接=绿，未连接=灰
     ui->cameraStatusLabel->setStyleSheet(connected
-        ? QStringLiteral("color: #22A55A;")
-        : QStringLiteral("color: #9AA3B0;"));
-    // 底部设备状态行同步相机状态
-    ui->bottomCameraStatusLabel->setText(connected ? QStringLiteral("已连接") : QStringLiteral("未连接"));
-    ui->bottomCameraStatusLabel->setStyleSheet(connected
         ? QStringLiteral("color: #22A55A;")
         : QStringLiteral("color: #9AA3B0;"));
     enableCameraControls(connected);
