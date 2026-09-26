@@ -55,6 +55,8 @@ private:
     void refreshCameraList();
     void applyConfig();
     void saveConfig();
+    // 集中为关键控件设置 tooltip，解释专业术语（帮助层）
+    void setupToolTips();
     // 在状态栏即时反馈运动操作结果（完整原因仍写日志）
     void showMotionResult(const QString &okMsg, const QString &failMsg, bool ok);
 

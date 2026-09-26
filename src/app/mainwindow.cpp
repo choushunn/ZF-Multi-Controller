@@ -94,10 +94,16 @@ MainWindow::MainWindow(QWidget *parent)
     ui->positionSpinBox->setSuffix(" μm");
     ui->jogStepSpinBox->setRange(0.1, maxPositionUm);
     ui->jogStepSpinBox->setSuffix(" μm");
+    // 速度/加速度上限与默认值均取自配置，避免硬编码漂移导致 setValue 被 clamp
+    ui->velocitySpinBox->setMaximum(cfg.defaultMaxVelocity);
+    ui->accelerationSpinBox->setMaximum(cfg.defaultAcceleration);
     ui->velocitySpinBox->setValue(cfg.defaultMaxVelocity);
     ui->accelerationSpinBox->setValue(cfg.defaultAcceleration);
 
     onMotorLog(QStringLiteral("应用程序已启动"));
+
+    // 帮助层：为关键控件解释专业术语
+    setupToolTips();
 
     // 自动刷新设备列表
     refreshDeviceList();
@@ -235,6 +241,20 @@ void MainWindow::showMotionResult(const QString &okMsg, const QString &failMsg, 
     statusBar()->setStyleSheet(ok ? QString()
                                   : QStringLiteral("QStatusBar { color: #c00000; }"));
     statusBar()->showMessage(ok ? okMsg : failMsg, ok ? 5000 : 10000);
+}
+
+void MainWindow::setupToolTips()
+{
+    ui->connectBtn->setToolTip(QStringLiteral("连接/断开选定的 KDC101 电机控制器。连接后电机控件才可用"));
+    ui->homeBtn->setToolTip(QStringLiteral("归位：让电机回到原点。首次移动前必须执行一次"));
+    ui->moveBtn->setToolTip(QStringLiteral("移动到目标位置（绝对位置，单位 μm）"));
+    ui->setVelocityBtn->setToolTip(QStringLiteral("把左侧的速度/加速度值应用到电机"));
+    ui->jogForwardBtn->setToolTip(QStringLiteral("正向点动：按步长微调"));
+    ui->jogBackwardBtn->setToolTip(QStringLiteral("反向点动：按步长微调"));
+    ui->positionLabel->setToolTip(QStringLiteral("当前电机位置（μm），归位后数值才有意义"));
+    ui->cameraConnectBtn->setToolTip(QStringLiteral("连接/断开相机"));
+    ui->captureBtn->setToolTip(QStringLiteral("冻结/恢复当前画面"));
+    ui->saveImageBtn->setToolTip(QStringLiteral("把当前画面保存为图片文件"));
 }
 
 void MainWindow::onConnectedChanged(bool connected)
