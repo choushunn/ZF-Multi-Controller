@@ -8,8 +8,8 @@
 #include <QPen>
 #include <QColor>
 #include <QFont>
-#include <QResizeEvent>
 #include <QFontMetrics>
+#include <QResizeEvent>
 #include <cmath>
 
 namespace {
@@ -25,8 +25,10 @@ double niceStep(double raw)
     return nice * mag;
 }
 
-constexpr int kTickLen = 6;     // 刻度线长度（屏幕像素）
+constexpr int kTickLen = 6;         // 刻度线长度（屏幕像素）
 constexpr double kTargetPx = 60.0;  // 期望的相邻刻度屏幕间距
+constexpr int kPadX = 48;           // 左侧刻度区宽度（容纳刻度线+数字）
+constexpr int kPadY = 22;           // 顶部刻度区高度（容纳刻度线+数字）
 
 } // namespace
 
@@ -79,7 +81,20 @@ void PreviewView::fitImage()
 {
     if (!m_item->isVisible() || m_item->pixmap().isNull())
         return;
-    fitInView(m_item, Qt::KeepAspectRatio);
+    const QSize vp = viewport()->size();
+    const QSizeF img = m_item->pixmap().size();
+    if (vp.width() <= 0 || vp.height() <= 0 || img.isNull())
+        return;
+    // 可用区域：四周留出刻度带（左右对称 kPadX、上下对称 kPadY）
+    const qreal sx = (vp.width() - 2.0 * kPadX) / img.width();
+    const qreal sy = (vp.height() - 2.0 * kPadY) / img.height();
+    const qreal s = qMin(sx, sy);
+    if (s <= 0)
+        return;
+    QTransform t;
+    t.translate(kPadX, kPadY);  // 图像左上角位于刻度带内侧
+    t.scale(s, s);
+    setTransform(t);
     viewport()->update();
 }
 
@@ -95,7 +110,7 @@ void PreviewView::paintEvent(QPaintEvent *event)
 
 void PreviewView::drawRulers(QPainter &painter)
 {
-    // 图像在屏幕上占据的矩形（与图像像素一一对应）
+    // 图像在屏幕上占据的矩形（位于刻度带内侧，与图像像素一一对应）
     const QRectF sceneRect = m_item->sceneBoundingRect();
     QRectF screen = QRectF(mapFromScene(sceneRect.topLeft()), mapFromScene(sceneRect.bottomRight()))
                         .normalized();
@@ -108,37 +123,32 @@ void PreviewView::drawRulers(QPainter &painter)
     const double stepX = niceStep(kTargetPx / scaleX);
     const double stepY = niceStep(kTargetPx / scaleY);
 
-    const QPen linePen(QColor(0, 0, 0, 160), 1);
-    const QPen outlinePen(Qt::black);
-    const QPen textPen(Qt::white);
-    painter.setFont(QFont(painter.font().family(), 7));
+    const QPen linePen(QColor(60, 60, 60), 1);
+    painter.setFont(QFont(painter.font().family(), 8));
+    const QFontMetrics fm(painter.font());
 
-    // 顶部刻度（X 像素坐标）
+    // 顶部刻度（X 像素坐标，画在图像上方的刻度带内）
     for (double x = stepX; x < sceneRect.width(); x += stepX) {
         const double sx = screen.left() + x * scaleX;
         painter.setPen(linePen);
-        painter.drawLine(QPointF(sx, screen.top() + 1), QPointF(sx, screen.top() + kTickLen));
+        painter.drawLine(QPointF(sx, screen.top() - kTickLen), QPointF(sx, screen.top()));
         painter.drawLine(QPointF(sx, screen.top() + screen.height()),
-                         QPointF(sx, screen.top() + screen.height() - kTickLen));
+                         QPointF(sx, screen.top() + screen.height() + kTickLen));
         const QString label = QString::number(static_cast<int>(std::llround(x)));
-        // 文字描边两次（黑底白字）增强对比
-        painter.setPen(outlinePen);
-        painter.drawText(QPointF(sx + 3, screen.top() + kTickLen + 8), label);
-        painter.setPen(textPen);
-        painter.drawText(QPointF(sx + 2, screen.top() + kTickLen + 7), label);
+        const QRectF textRect(sx - 30, 0, 60, kPadY - kTickLen - 3);
+        painter.drawText(textRect, Qt::AlignHCenter | Qt::AlignBottom, label);
     }
 
-    // 左侧刻度（Y 像素坐标）
+    // 左侧刻度（Y 像素坐标，画在图像左侧的刻度带内）
     for (double y = stepY; y < sceneRect.height(); y += stepY) {
         const double sy = screen.top() + y * scaleY;
         painter.setPen(linePen);
-        painter.drawLine(QPointF(screen.left() + 1, sy), QPointF(screen.left() + kTickLen, sy));
+        painter.drawLine(QPointF(screen.left() - kTickLen, sy), QPointF(screen.left(), sy));
         painter.drawLine(QPointF(screen.left() + screen.width(), sy),
-                         QPointF(screen.left() + screen.width() - kTickLen, sy));
+                         QPointF(screen.left() + screen.width() + kTickLen, sy));
         const QString label = QString::number(static_cast<int>(std::llround(y)));
-        painter.setPen(outlinePen);
-        painter.drawText(QPointF(screen.left() + kTickLen + 8, sy), label);
-        painter.setPen(textPen);
-        painter.drawText(QPointF(screen.left() + kTickLen + 7, sy - 1), label);
+        const QRectF textRect(0, sy - fm.height() / 2.0,
+                              kPadX - kTickLen - 3, fm.height());
+        painter.drawText(textRect, Qt::AlignRight | Qt::AlignVCenter, label);
     }
 }
