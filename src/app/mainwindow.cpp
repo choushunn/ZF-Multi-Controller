@@ -255,6 +255,8 @@ void MainWindow::updateDeviceStatus()
     ui->positionLabel->setText(QStringLiteral("%1").arg(motor->positionUm(), 0, 'f', 1));
     // 底部设备状态行同步实时位置
     ui->bottomPositionLabel->setText(QStringLiteral("位置: %1 μm").arg(motor->positionUm(), 0, 'f', 1));
+    // 底部设备状态行同步实时机械状态
+    ui->bottomMotionLabel->setText(QStringLiteral("状态: %1").arg(motor->status().describe()));
 
     static QString lastStatusInfo;
     const QString info = motor->status().describe();
@@ -297,10 +299,16 @@ void MainWindow::onConnectedChanged(bool connected)
 {
     ui->connectBtn->setText(connected ? QStringLiteral("断开") : QStringLiteral("连接"));
     // 底部设备状态行同步电机连接状态（已连接=绿，未连接=灰）
-    ui->bottomMotorStatusLabel->setText(connected ? QStringLiteral("已连接") : QStringLiteral("未连接"));
+    ui->bottomMotorStatusLabel->setText(connected
+        ? QStringLiteral("电机: 已连接")
+        : QStringLiteral("电机: 未连接"));
     ui->bottomMotorStatusLabel->setStyleSheet(connected
         ? QStringLiteral("color: #22A55A;")
         : QStringLiteral("color: #9AA3B0;"));
+    // 已连接时显示设备序列号
+    ui->bottomSerialLabel->setText(connected
+        ? QStringLiteral("序列号: %1").arg(motor->serialNumber())
+        : QStringLiteral("序列号: -"));
     enableControls(connected);
 }
 
@@ -324,8 +332,8 @@ void MainWindow::enableCameraControls(bool enabled)
     ui->captureBtn->setEnabled(enabled);
     ui->saveImageBtn->setEnabled(enabled);
     ui->cameraConnectBtn->setText(enabled ? QStringLiteral("断开相机") : QStringLiteral("连接相机"));
-    // 断开相机时把「捕获」按钮复位为「捕获图像」状态
-    ui->captureBtn->setText(QStringLiteral("捕获图像"));
+    // 断开相机时把「暂停」按钮复位
+    ui->captureBtn->setText(QStringLiteral("暂停"));
 }
 
 void MainWindow::refreshDeviceList()
@@ -362,6 +370,14 @@ void MainWindow::refreshCameraList()
         onMotorLog(QStringLiteral("未发现相机设备"));
     else
         onMotorLog(QStringLiteral("发现 %1 个相机").arg(cams.size()));
+
+    // 填充相机型号下拉框
+    const QString prev = ui->cameraModelComboBox->currentText();
+    ui->cameraModelComboBox->clear();
+    ui->cameraModelComboBox->addItems(cams);
+    int idx = ui->cameraModelComboBox->findText(prev);
+    if (idx >= 0)
+        ui->cameraModelComboBox->setCurrentIndex(idx);
 }
 
 void MainWindow::onCameraConnectBtnClicked()
@@ -377,9 +393,15 @@ void MainWindow::onCameraConnectBtnClicked()
             return;
         }
 
-        // 优先用配置中的 UserID
-        const QString &cfgUserId = AppConfig::instance().data().cameraUserId;
-        QString id = cams.contains(cfgUserId) ? cfgUserId : cams.first();
+        // 优先使用下拉框选中的型号，其次配置中的 UserID，最后第一个
+        QString id;
+        const QString selected = ui->cameraModelComboBox->currentText().trimmed();
+        if (cams.contains(selected)) {
+            id = selected;
+        } else {
+            const QString &cfgUserId = AppConfig::instance().data().cameraUserId;
+            id = cams.contains(cfgUserId) ? cfgUserId : cams.first();
+        }
 
         if (!camera->connectTo(id)) {
             QMessageBox::critical(this, QStringLiteral("错误"),
@@ -402,12 +424,12 @@ void MainWindow::onCaptureBtnClicked()
     if (camera->isCapturing()) {
         // 正在实时预览：冻结当前帧
         camera->stopCapture();
-        ui->captureBtn->setText(QStringLiteral("恢复预览"));
-        onMotorLog(QStringLiteral("画面已冻结，可点击保存图像"));
+        ui->captureBtn->setText(QStringLiteral("继续"));
+        onMotorLog(QStringLiteral("画面已冻结，可点击保存"));
     } else {
         // 已冻结：恢复实时预览
         camera->startCapture();
-        ui->captureBtn->setText(QStringLiteral("捕获图像"));
+        ui->captureBtn->setText(QStringLiteral("暂停"));
         onMotorLog(QStringLiteral("已恢复实时预览"));
     }
 }

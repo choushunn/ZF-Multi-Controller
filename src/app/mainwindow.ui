@@ -92,6 +92,19 @@
         </widget>
        </item>
        <item>
+        <widget class="QComboBox" name="cameraModelComboBox">
+         <property name="minimumSize">
+          <size>
+           <width>120</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="placeholderText">
+          <string>选择相机型号</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="cameraConnectBtn">
          <property name="minimumSize">
           <size>
@@ -116,7 +129,7 @@
           </size>
          </property>
          <property name="text">
-          <string>捕获图像</string>
+          <string>暂停</string>
          </property>
         </widget>
        </item>
@@ -132,7 +145,17 @@
           </size>
          </property>
          <property name="text">
-          <string>保存图像</string>
+          <string>保存</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QFrame" name="sep2">
+         <property name="frameShape">
+          <enum>QFrame::Shape::VLine</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Shadow::Sunken</enum>
          </property>
         </widget>
        </item>
@@ -269,6 +292,18 @@
          </item>
          <item row="0" column="1">
           <widget class="QLabel" name="positionLabel">
+           <property name="minimumSize">
+            <size>
+             <width>150</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>150</width>
+             <height>16777215</height>
+            </size>
+           </property>
            <property name="styleSheet">
             <string notr="true">color: rgb(0, 85, 170); font-weight: bold;</string>
            </property>
@@ -298,6 +333,18 @@
            <property name="enabled">
             <bool>false</bool>
            </property>
+           <property name="minimumSize">
+            <size>
+             <width>150</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>150</width>
+             <height>16777215</height>
+            </size>
+           </property>
            <property name="alignment">
             <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
            </property>
@@ -326,6 +373,18 @@
           <widget class="QDoubleSpinBox" name="velocitySpinBox">
            <property name="enabled">
             <bool>false</bool>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>150</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>150</width>
+             <height>16777215</height>
+            </size>
            </property>
            <property name="alignment">
             <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -368,6 +427,18 @@
            <property name="enabled">
             <bool>false</bool>
            </property>
+           <property name="minimumSize">
+            <size>
+             <width>150</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>150</width>
+             <height>16777215</height>
+            </size>
+           </property>
            <property name="alignment">
             <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
            </property>
@@ -409,6 +480,18 @@
            <property name="enabled">
             <bool>false</bool>
            </property>
+           <property name="minimumSize">
+            <size>
+             <width>150</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>150</width>
+             <height>16777215</height>
+            </size>
+           </property>
            <property name="alignment">
             <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
            </property>
@@ -423,7 +506,7 @@
            </property>
           </widget>
          </item>
-         <item row="5" column="0">
+         <item row="5" column="1" alignment="Qt::AlignRight|Qt::AlignVCenter">
           <widget class="QPushButton" name="setVelocityBtn">
            <property name="enabled">
             <bool>false</bool>
@@ -537,7 +620,21 @@
        <item>
         <widget class="QLabel" name="bottomMotorStatusLabel">
          <property name="text">
-          <string>未连接</string>
+          <string>电机: 未连接</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="bottomMotionLabel">
+         <property name="text">
+          <string>状态: -</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="bottomSerialLabel">
+         <property name="text">
+          <string>序列号: -</string>
          </property>
         </widget>
        </item>
