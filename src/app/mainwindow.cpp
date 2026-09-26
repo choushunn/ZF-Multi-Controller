@@ -134,8 +134,8 @@ MainWindow::MainWindow(QWidget *parent)
     setupToolTips();
 
     // 摄像头显示区：双击进入/退出全屏，全屏时 Esc 退出
-    ui->cameraDisplayLabel->setFocusPolicy(Qt::StrongFocus);
-    ui->cameraDisplayLabel->installEventFilter(this);
+    ui->previewView->setFocusPolicy(Qt::StrongFocus);
+    ui->previewView->installEventFilter(this);
 
     // 左(控制)/右(显示) 可拖拽分割：右侧优先吃窗口增长，分隔手柄可见可调
     ui->mainSplitter->setHandleWidth(7);
@@ -613,10 +613,8 @@ void MainWindow::onSaveImageBtnClicked()
 
 void MainWindow::onCameraFrameReady(const QImage &frame)
 {
-    // 在 label 中显示帧
-    const QPixmap pix = QPixmap::fromImage(frame).scaled(
-        ui->cameraDisplayLabel->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-    ui->cameraDisplayLabel->setPixmap(pix);
+    // 在预览视图中显示帧（自动适配大小并叠加像素刻度尺）
+    ui->previewView->showFrame(frame);
     ui->imageInfoLabel->setText(QStringLiteral("图像信息: %1x%2").arg(frame.width()).arg(frame.height()));
 
     // 帧率统计：用帧间隔做指数平滑，避免瞬时跳动
@@ -641,6 +639,7 @@ void MainWindow::onCameraConnectedChanged(bool connected)
     if (connected)
         setupCameraControls();
     else {
+        ui->previewView->clearFrame();
         exposureRefreshTimer->stop();
         ui->cameraControlBox->setEnabled(false);
     }
@@ -655,32 +654,32 @@ void MainWindow::onCameraLog(const QString &message)
 // 摄像头显示区：双击进入/退出全屏
 void MainWindow::toggleCameraFullscreen()
 {
-    QLabel *lbl = ui->cameraDisplayLabel;
+    QWidget *view = ui->previewView;
     if (m_cameraFullscreen) {
         restoreCameraToPanel();
         return;
     }
-    m_cameraParent = lbl->parentWidget();
+    m_cameraParent = view->parentWidget();
     m_cameraLayout = m_cameraParent ? m_cameraParent->layout() : nullptr;
-    lbl->setParent(nullptr);
-    lbl->setWindowFlags(Qt::Window);
-    lbl->setWindowTitle(QStringLiteral("摄像头（双击或 Esc 退出全屏）"));
-    lbl->showFullScreen();
-    lbl->setFocus(Qt::ShortcutFocusReason);
+    view->setParent(nullptr);
+    view->setWindowFlags(Qt::Window);
+    view->setWindowTitle(QStringLiteral("摄像头（双击或 Esc 退出全屏）"));
+    view->showFullScreen();
+    view->setFocus(Qt::ShortcutFocusReason);
     m_cameraFullscreen = true;
 }
 
 void MainWindow::restoreCameraToPanel()
 {
-    QLabel *lbl = ui->cameraDisplayLabel;
-    lbl->setWindowFlags(Qt::Widget);
+    QWidget *view = ui->previewView;
+    view->setWindowFlags(Qt::Widget);
     if (auto *box = qobject_cast<QBoxLayout *>(m_cameraLayout))
-        box->insertWidget(0, lbl);
+        box->insertWidget(0, view);
     else if (m_cameraLayout)
-        m_cameraLayout->addWidget(lbl);
+        m_cameraLayout->addWidget(view);
     else if (m_cameraParent)
-        lbl->setParent(m_cameraParent);
-    lbl->show();
+        view->setParent(m_cameraParent);
+    view->show();
     m_cameraFullscreen = false;
     m_cameraParent = nullptr;
     m_cameraLayout = nullptr;
@@ -688,7 +687,7 @@ void MainWindow::restoreCameraToPanel()
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 {
-    if (obj == ui->cameraDisplayLabel) {
+    if (obj == ui->previewView) {
         if (event->type() == QEvent::MouseButtonDblClick) {
             toggleCameraFullscreen();
             return true;

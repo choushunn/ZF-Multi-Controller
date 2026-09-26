@@ -79,6 +79,8 @@ if(MC_ENABLE_GUI AND TARGET Qt${QT_VERSION_MAJOR}::Widgets)
             src/app/mainwindow.cpp
             src/app/mainwindow.h
             src/app/mainwindow.ui
+            src/app/previewview.cpp
+            src/app/previewview.h
             src/resources/app.qrc
             src/resources/app.rc
     )
