@@ -6,6 +6,7 @@
 #include <QFileDialog>
 #include <QPixmap>
 #include <QImage>
+#include <QSplitter>
 #include <QDir>
 #include <QStandardPaths>
 
@@ -104,6 +105,17 @@ MainWindow::MainWindow(QWidget *parent)
 
     // 帮助层：为关键控件解释专业术语
     setupToolTips();
+
+    // 左(控制)/右(显示) 可拖拽分割：右侧优先吃窗口增长，分隔手柄可见可调
+    ui->mainSplitter->setHandleWidth(7);
+    ui->mainSplitter->setChildrenCollapsible(false);
+    ui->mainSplitter->widget(0)->setMinimumWidth(280);  // 左侧保持可用宽度
+    ui->mainSplitter->widget(1)->setMinimumWidth(440);
+    ui->mainSplitter->setStretchFactor(0, 0);
+    ui->mainSplitter->setStretchFactor(1, 1);
+    ui->mainSplitter->setSizes({360, 840});  // 初始分配，防止折叠
+    ui->mainSplitter->setStyleSheet(QStringLiteral(
+        "QSplitter::handle { background: #c0c0c8; }"));
 
     // 自动刷新设备列表
     refreshDeviceList();

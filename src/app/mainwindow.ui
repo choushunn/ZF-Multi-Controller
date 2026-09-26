@@ -37,10 +37,15 @@
      <number>12</number>
     </property>
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <property name="spacing">
-       <number>12</number>
+     <widget class="QSplitter" name="mainSplitter">
+      <property name="orientation">
+       <enum>Qt::Orientation::Horizontal</enum>
       </property>
+      <widget class="QWidget" name="leftPanel">
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <property name="spacing">
+         <number>12</number>
+        </property>
       <item>
        <widget class="QGroupBox" name="connectionGroupBox">
         <property name="title">
@@ -504,9 +509,8 @@
        </widget>
       </item>
      </layout>
-    </item>
-    <item>
-     <widget class="QGroupBox" name="cameraGroupBox">
+      </widget>
+      <widget class="QGroupBox" name="cameraGroupBox">
       <property name="title">
        <string>相机显示</string>
       </property>
@@ -640,6 +644,7 @@
        </item>
       </layout>
      </widget>
+      </widget>
     </item>
    </layout>
   </widget>
