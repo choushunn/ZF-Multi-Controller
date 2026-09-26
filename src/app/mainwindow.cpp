@@ -59,13 +59,13 @@ MainWindow::MainWindow(QWidget *parent)
     // 连接 Logger 信号（分级日志输出到 UI）
     connect(&Logger::instance(), &Logger::message, this,
         [this](LogLevel level, const QString &formatted) {
-            // 级别着色
-            QString color = QStringLiteral("black");
+            // 级别着色（对齐主题令牌）
+            QString color = QStringLiteral("#1A2233");
             switch (level) {
-            case LogLevel::Debug: color = QStringLiteral("gray"); break;
-            case LogLevel::Info:  color = QStringLiteral("black"); break;
-            case LogLevel::Warn:  color = QStringLiteral("#cc7a00"); break;
-            case LogLevel::Error: color = QStringLiteral("red"); break;
+            case LogLevel::Debug: color = QStringLiteral("#8B96A8"); break;
+            case LogLevel::Info:  color = QStringLiteral("#1A2233"); break;
+            case LogLevel::Warn:  color = QStringLiteral("#B26A00"); break;
+            case LogLevel::Error: color = QStringLiteral("#D64045"); break;
             }
             const QString html = QStringLiteral("<span style='color:%1'>%2</span>")
                 .arg(color).arg(formatted.toHtmlEscaped());
@@ -116,8 +116,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->mainSplitter->setStretchFactor(0, 0);
     ui->mainSplitter->setStretchFactor(1, 1);
     ui->mainSplitter->setSizes({360, 840});  // 初始分配，防止折叠
-    ui->mainSplitter->setStyleSheet(QStringLiteral(
-        "QSplitter::handle { background: #c0c0c8; }"));
+    // 分隔手柄样式由全局主题 QSS 统一控制（QSplitter::handle），不再内联设置
 
     // "视图 → 全屏模式"：启动即全屏，可经菜单/快捷键退出
     QMenu *viewMenu = menuBar()->addMenu(QStringLiteral("视图(&V)"));
@@ -275,9 +274,9 @@ void MainWindow::onMotorLog(const QString &message)
 
 void MainWindow::showMotionResult(const QString &okMsg, const QString &failMsg, bool ok)
 {
-    // 失败用红色突出，成功用默认色；信息只在状态栏停留数秒，完整原因仍写日志
+    // 失败用红色突出（主题令牌 #D64045），成功用默认色；信息只在状态栏停留数秒，完整原因仍写日志
     statusBar()->setStyleSheet(ok ? QString()
-                                  : QStringLiteral("QStatusBar { color: #c00000; }"));
+                                  : QStringLiteral("QStatusBar { color: #D64045; }"));
     statusBar()->showMessage(ok ? okMsg : failMsg, ok ? 5000 : 10000);
 }
 
@@ -298,6 +297,10 @@ void MainWindow::setupToolTips()
 void MainWindow::onConnectedChanged(bool connected)
 {
     ui->connectionStatusLabel->setText(connected ? QStringLiteral("已连接") : QStringLiteral("未连接"));
+    // 状态配色走主题令牌：#22A55A=已连接，灰=未连接
+    ui->connectionStatusLabel->setStyleSheet(connected
+        ? QStringLiteral("color: #22A55A;")
+        : QStringLiteral("color: #9AA3B0;"));
     ui->connectBtn->setText(connected ? QStringLiteral("断开") : QStringLiteral("连接"));
     enableControls(connected);
 }
@@ -445,6 +448,10 @@ void MainWindow::onCameraFrameReady(const QImage &frame)
 void MainWindow::onCameraConnectedChanged(bool connected)
 {
     ui->cameraStatusLabel->setText(connected ? QStringLiteral("相机状态: 已连接") : QStringLiteral("相机状态: 未连接"));
+    // 状态配色走主题令牌：#22A55A=已连接，灰=未连接
+    ui->cameraStatusLabel->setStyleSheet(connected
+        ? QStringLiteral("color: #22A55A;")
+        : QStringLiteral("color: #9AA3B0;"));
     enableCameraControls(connected);
 }
 
