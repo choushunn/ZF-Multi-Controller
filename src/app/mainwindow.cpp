@@ -109,11 +109,11 @@ MainWindow::MainWindow(QWidget *parent)
     // 左(控制)/右(显示) 可拖拽分割：右侧优先吃窗口增长，分隔手柄可见可调
     ui->mainSplitter->setHandleWidth(7);
     ui->mainSplitter->setChildrenCollapsible(false);
-    ui->mainSplitter->widget(0)->setMinimumWidth(330);  // 左侧贴合内容宽度，避免右侧留有空白列
+    ui->mainSplitter->widget(0)->setMinimumWidth(300);  // 左侧贴合内容宽度，避免右侧留有空白列
     ui->mainSplitter->widget(1)->setMinimumWidth(440);
     ui->mainSplitter->setStretchFactor(0, 0);
     ui->mainSplitter->setStretchFactor(1, 1);
-    ui->mainSplitter->setSizes({330, 870});  // 初始分配：左侧贴合内容，右侧相机预览吃满剩余空间
+    ui->mainSplitter->setSizes({300, 900});  // 初始分配：左侧贴合内容，右侧相机预览吃满剩余空间
     // 分隔手柄使用 Qt 原生样式，保留可拖拽与最小宽度设置
 
     // 菜单栏已在 .ui 中定义：文件/视图/帮助，此处接线动作
