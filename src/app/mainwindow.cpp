@@ -111,11 +111,11 @@ MainWindow::MainWindow(QWidget *parent)
     // 左(控制)/右(显示) 可拖拽分割：右侧优先吃窗口增长，分隔手柄可见可调
     ui->mainSplitter->setHandleWidth(7);
     ui->mainSplitter->setChildrenCollapsible(false);
-    ui->mainSplitter->widget(0)->setMinimumWidth(280);  // 左侧保持可用宽度
+    ui->mainSplitter->widget(0)->setMinimumWidth(400);  // 左侧容纳等宽排列的输入列
     ui->mainSplitter->widget(1)->setMinimumWidth(440);
     ui->mainSplitter->setStretchFactor(0, 0);
     ui->mainSplitter->setStretchFactor(1, 1);
-    ui->mainSplitter->setSizes({360, 840});  // 初始分配，防止折叠
+    ui->mainSplitter->setSizes({430, 730});  // 初始分配，防止折叠
     // 分隔手柄使用 Qt 原生样式，保留可拖拽与最小宽度设置
 
     // "视图 → 全屏模式"：启动即全屏，可经菜单/快捷键退出
