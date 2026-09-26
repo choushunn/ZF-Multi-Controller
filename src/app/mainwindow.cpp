@@ -125,6 +125,15 @@ MainWindow::MainWindow(QWidget *parent)
     });
     // 文件 → 退出
     connect(ui->actionExit, &QAction::triggered, this, [this]() { close(); });
+    // 工具栏 → 退出全屏（红色按钮）：优先退出相机全屏，其次退出主窗口全屏
+    connect(ui->exitFullscreenBtn, &QPushButton::clicked, this, [this]() {
+        if (m_cameraFullscreen) {
+            toggleCameraFullscreen();   // 恢复相机到右侧面板
+            return;
+        }
+        if (isFullScreen())
+            m_fullscreenAct->setChecked(false);  // 触发 toggled → showNormal()
+    });
     // 帮助 → 关于
     connect(ui->actionAbout, &QAction::triggered, this, [this]() {
         QMessageBox::about(this, QStringLiteral("关于 Multi-Controller"),
