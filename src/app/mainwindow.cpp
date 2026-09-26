@@ -268,11 +268,8 @@ void MainWindow::updateDeviceStatus()
 
 void MainWindow::onMotorLog(const QString &message)
 {
-    const QString timestamp =
-        QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd hh:mm:ss"));
-    const QString formatted = QStringLiteral("[%1] %2").arg(timestamp, message);
-    ui->logTextEdit->appendPlainText(formatted);
-    // 同时写入 Logger（会分级落盘）
+    // 统一经由 Logger 输出到 UI（分级）+ 落盘；此处不再自行追加，
+    // 避免 Logger::message 信号与这里的追加重复显示两条日志。
     Logger::instance().info(message);
 }
 
