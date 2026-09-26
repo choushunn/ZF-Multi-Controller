@@ -305,10 +305,6 @@ void MainWindow::onConnectedChanged(bool connected)
     ui->bottomMotorStatusLabel->setStyleSheet(connected
         ? QStringLiteral("color: #22A55A;")
         : QStringLiteral("color: #9AA3B0;"));
-    // 已连接时显示设备序列号
-    ui->bottomSerialLabel->setText(connected
-        ? QStringLiteral("序列号: %1").arg(motor->serialNumber())
-        : QStringLiteral("序列号: -"));
     enableControls(connected);
 }
 

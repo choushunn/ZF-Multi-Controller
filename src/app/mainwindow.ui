@@ -632,13 +632,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="bottomSerialLabel">
-         <property name="text">
-          <string>序列号: -</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QLabel" name="bottomPositionLabel">
          <property name="text">
           <string>位置: 0.0 μm</string>
