@@ -89,9 +89,10 @@ bool ToupCamera::ensureApi()
 
 QStringList ToupCamera::availableCameras()
 {
-    QStringList cameras;
+    idList_.clear();
+    nameList_.clear();
     if (!ensureApi())
-        return cameras;
+        return QStringList();
 
     Device devices[kMaxCameras] = {};
     const unsigned count = qMin(api_->enumerate(devices), kMaxCameras);
@@ -99,12 +100,21 @@ QStringList ToupCamera::availableCameras()
         const QString id = QString::fromWCharArray(devices[i].id);
         const QString name = QString::fromWCharArray(devices[i].displayName);
         if (!id.isEmpty()) {
-            cameras << id;
+            idList_ << id;
+            nameList_ << name;
             if (description_.isEmpty())
                 description_ = name;
         }
     }
-    return cameras;
+    return idList_;
+}
+
+QStringList ToupCamera::availableCameraNames()
+{
+    // 保证名称列表与标识列表同时就绪（枚举成本集中在 availableCameras()）
+    if (nameList_.isEmpty() && idList_.isEmpty())
+        availableCameras();
+    return nameList_;
 }
 
 bool ToupCamera::connectTo(const QString &id)

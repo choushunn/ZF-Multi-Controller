@@ -20,6 +20,10 @@ public:
     // 设备发现：返回可用的相机标识列表（UserID / 序列号 / 友好名）
     virtual QStringList availableCameras() = 0;
 
+    // 与 availableCameras() 顺序对应的设备型号名列表（用于 UI 展示）。
+    // 默认与标识一致；具体相机实现可返回更友好的型号名。
+    virtual QStringList availableCameraNames() { return availableCameras(); }
+
     // 连接管理
     virtual bool connectTo(const QString &id) = 0;
     virtual void disconnect() = 0;

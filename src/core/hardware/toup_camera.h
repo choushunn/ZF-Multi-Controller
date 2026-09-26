@@ -17,6 +17,7 @@ public:
     ~ToupCamera() override;
 
     QStringList availableCameras() override;
+    QStringList availableCameraNames() override;
     bool connectTo(const QString &id) override;
     void disconnect() override;
     bool isConnected() const override { return connected_; }
@@ -43,4 +44,6 @@ private:
     bool capturing_ = false;
     QString description_;
     QImage lastFrame_;
+    QStringList idList_;    // 与 nameList_ 逐项对应的设备标识（序列号/UserID）
+    QStringList nameList_;  // 设备型号名（displayName）
 };

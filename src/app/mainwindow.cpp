@@ -379,11 +379,16 @@ void MainWindow::refreshCameraList()
     else
         onMotorLog(QStringLiteral("发现 %1 个相机").arg(cams.size()));
 
-    // 填充相机型号下拉框
-    const QString prev = ui->cameraModelComboBox->currentText();
+    // 填充相机型号下拉框：显示型号名，真实标识(id)存 userData 供连接使用
+    const QStringList names = camera->availableCameraNames();
+    const QString prevId = ui->cameraModelComboBox->currentData().toString();
     ui->cameraModelComboBox->clear();
-    ui->cameraModelComboBox->addItems(cams);
-    int idx = ui->cameraModelComboBox->findText(prev);
+    for (int i = 0; i < cams.size(); ++i) {
+        const QString name = i < names.size() && !names[i].trimmed().isEmpty()
+                ? names[i] : cams[i];
+        ui->cameraModelComboBox->addItem(name, cams[i]);
+    }
+    int idx = ui->cameraModelComboBox->findData(prevId);
     if (idx >= 0)
         ui->cameraModelComboBox->setCurrentIndex(idx);
 }
@@ -402,11 +407,8 @@ void MainWindow::onCameraConnectBtnClicked()
         }
 
         // 优先使用下拉框选中的型号，其次配置中的 UserID，最后第一个
-        QString id;
-        const QString selected = ui->cameraModelComboBox->currentText().trimmed();
-        if (cams.contains(selected)) {
-            id = selected;
-        } else {
+        QString id = ui->cameraModelComboBox->currentData().toString();
+        if (id.isEmpty()) {
             const QString &cfgUserId = AppConfig::instance().data().cameraUserId;
             id = cams.contains(cfgUserId) ? cfgUserId : cams.first();
         }
