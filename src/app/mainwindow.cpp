@@ -7,6 +7,7 @@
 #include <QPixmap>
 #include <QImage>
 #include <QSplitter>
+#include <QTimer>
 #include <QDir>
 #include <QStandardPaths>
 
@@ -117,9 +118,12 @@ MainWindow::MainWindow(QWidget *parent)
     ui->mainSplitter->setStyleSheet(QStringLiteral(
         "QSplitter::handle { background: #c0c0c8; }"));
 
-    // 自动刷新设备列表
-    refreshDeviceList();
-    refreshCameraList();
+    // 首次设备/相机列表刷新延迟到事件循环启动、主窗口已显示之后再执行：
+    // 避免"未发现设备"弹窗先于主窗口出现。手动"刷新列表"仍同步刷新并正常弹窗。
+    QTimer::singleShot(0, this, [this]() {
+        refreshDeviceList();
+        refreshCameraList();
+    });
 }
 
 MainWindow::~MainWindow()
