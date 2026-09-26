@@ -29,6 +29,8 @@ public:
 protected:
     // Esc 在全屏模式下退出全屏
     void keyPressEvent(QKeyEvent *event) override;
+    // 捕获摄像头显示区的双击(放大全屏)与 Esc(退出)事件
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
 private slots:
     // KDC101 控制相关槽函数
@@ -64,12 +66,18 @@ private:
     void setupToolTips();
     // 在状态栏即时反馈运动操作结果（完整原因仍写日志）
     void showMotionResult(const QString &okMsg, const QString &failMsg, bool ok);
+    // 摄像头显示区：键盘双击放大/退出全屏
+    void toggleCameraFullscreen();
+    void restoreCameraToPanel();
 
     Ui::MainWindow *ui;
     QTimer *statusTimer;
     KCubeMotor *motor;
     mc::ICamera *camera;
     QAction *m_fullscreenAct = nullptr;  // "视图 → 全屏模式"（checkable，F11 切换）
+    bool m_cameraFullscreen = false;     // 摄像头显示区当前是否处于全屏
+    QWidget *m_cameraParent = nullptr;   // 全屏前的父容器，用于恢复
+    QLayout *m_cameraLayout = nullptr;   // 全屏前的父布局，用于恢复
 };
 
 #endif // MAINWINDOW_H

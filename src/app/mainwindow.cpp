@@ -11,6 +11,9 @@
 #include <QKeyEvent>
 #include <QDir>
 #include <QStandardPaths>
+#include <QLabel>
+#include <QBoxLayout>
+#include <QEvent>
 
 #include "core/hardware/kcubemotor.h"
 #include "core/appconfig.h"
@@ -98,6 +101,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     // 帮助层：为关键控件解释专业术语
     setupToolTips();
+
+    // 摄像头显示区：双击进入/退出全屏，全屏时 Esc 退出
+    ui->cameraDisplayLabel->setFocusPolicy(Qt::StrongFocus);
+    ui->cameraDisplayLabel->installEventFilter(this);
 
     // 左(控制)/右(显示) 可拖拽分割：右侧优先吃窗口增长，分隔手柄可见可调
     ui->mainSplitter->setHandleWidth(7);
@@ -475,4 +482,56 @@ void MainWindow::onCameraConnectedChanged(bool connected)
 void MainWindow::onCameraLog(const QString &message)
 {
     onMotorLog(message);
+}
+
+// 摄像头显示区：双击进入/退出全屏
+void MainWindow::toggleCameraFullscreen()
+{
+    QLabel *lbl = ui->cameraDisplayLabel;
+    if (m_cameraFullscreen) {
+        restoreCameraToPanel();
+        return;
+    }
+    m_cameraParent = lbl->parentWidget();
+    m_cameraLayout = m_cameraParent ? m_cameraParent->layout() : nullptr;
+    lbl->setParent(nullptr);
+    lbl->setWindowFlags(Qt::Window);
+    lbl->setWindowTitle(QStringLiteral("摄像头（双击或 Esc 退出全屏）"));
+    lbl->showFullScreen();
+    lbl->setFocus(Qt::ShortcutFocusReason);
+    m_cameraFullscreen = true;
+}
+
+void MainWindow::restoreCameraToPanel()
+{
+    QLabel *lbl = ui->cameraDisplayLabel;
+    lbl->setWindowFlags(Qt::Widget);
+    if (auto *box = qobject_cast<QBoxLayout *>(m_cameraLayout))
+        box->insertWidget(0, lbl);
+    else if (m_cameraLayout)
+        m_cameraLayout->addWidget(lbl);
+    else if (m_cameraParent)
+        lbl->setParent(m_cameraParent);
+    lbl->show();
+    m_cameraFullscreen = false;
+    m_cameraParent = nullptr;
+    m_cameraLayout = nullptr;
+}
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj == ui->cameraDisplayLabel) {
+        if (event->type() == QEvent::MouseButtonDblClick) {
+            toggleCameraFullscreen();
+            return true;
+        }
+        if (m_cameraFullscreen && event->type() == QEvent::KeyPress) {
+            const auto *ke = static_cast<QKeyEvent *>(event);
+            if (ke->key() == Qt::Key_Escape) {
+                restoreCameraToPanel();
+                return true;
+            }
+        }
+    }
+    return QMainWindow::eventFilter(obj, event);
 }
