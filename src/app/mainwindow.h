@@ -62,6 +62,10 @@ private:
     // 相机连接后初始化曝光/增益/分辨率控件
     void setupCameraControls();
     bool cameraControlsValid() const;
+    // 自动曝光时按相机实际曝光值刷新滑块与数值标签
+    void syncExposureUi();
+    bool syncingExposure_ = false;
+    QTimer *exposureRefreshTimer = nullptr;
     void refreshDeviceList();
     void refreshCameraList();
     void applyConfig();

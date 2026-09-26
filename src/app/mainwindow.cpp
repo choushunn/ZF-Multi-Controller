@@ -83,14 +83,26 @@ MainWindow::MainWindow(QWidget *parent)
                 this, &MainWindow::onCameraLog);
 
         // 相机参数控制：自动曝光/曝光滑块/增益/分辨率（无相机或模型不支持时安全失效）
+        // 自动曝光状态下由相机自动调曝光，周期性回读更新滑块与数值
+        exposureRefreshTimer = new QTimer(this);
+        exposureRefreshTimer->setInterval(200);
+        connect(exposureRefreshTimer, &QTimer::timeout, this, &MainWindow::syncExposureUi);
         connect(ui->autoExposureCheckBox, &QCheckBox::toggled,
                 this, [this](bool on) {
                     if (camera)
                         camera->setAutoExposure(on);
                     ui->exposureSlider->setEnabled(!on);  // 自动曝光时滑块禁用
+                    if (on) {
+                        exposureRefreshTimer->start();
+                        syncExposureUi();
+                    } else {
+                        exposureRefreshTimer->stop();
+                    }
                 });
         connect(ui->exposureSlider, &QSlider::valueChanged,
                 this, [this](int us) {
+                    if (syncingExposure_)
+                        return;  // 回读同步值，不产生写回
                     const double ms = us / 1000.0;
                     if (camera)
                         camera->setExposure(ms);
@@ -412,6 +424,20 @@ void MainWindow::setupCameraControls()
     ui->cameraControlBox->setEnabled(anyValid);
 }
 
+// 自动曝光时周期性回读相机实际曝光值，同步滑块与数值标签（不产生写回）
+void MainWindow::syncExposureUi()
+{
+    if (!camera)
+        return;
+    const double ms = camera->exposure();
+    if (ms < 0)
+        return;
+    syncingExposure_ = true;
+    ui->exposureSlider->setValue(int(ms * 1000.0));
+    ui->exposureValueLabel->setText(QStringLiteral("%1 ms").arg(ms, 0, 'f', 3));
+    syncingExposure_ = false;
+}
+
 // 参数控件当前是否有效（用于使能相机控制框）
 bool MainWindow::cameraControlsValid() const
 {
@@ -571,8 +597,10 @@ void MainWindow::onCameraConnectedChanged(bool connected)
         : QStringLiteral("color: #9AA3B0;"));
     if (connected)
         setupCameraControls();
-    else
+    else {
+        exposureRefreshTimer->stop();
         ui->cameraControlBox->setEnabled(false);
+    }
     enableCameraControls(connected);
 }
 
