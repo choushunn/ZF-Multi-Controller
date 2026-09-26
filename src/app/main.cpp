@@ -13,6 +13,12 @@ int main(int argc, char *argv[])
     a.setApplicationVersion(QStringLiteral("0.1.0"));
     a.setOrganizationName(QStringLiteral("Multi-Controller"));
 
+    // 统一按钮/输入框/标签等控件高度，保证界面整齐
+    a.setStyleSheet(QStringLiteral(
+        "QPushButton, QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QLabel {"
+        "    min-height: 28px;"
+        "}"));
+
     // 加载配置
     auto &config = mc::AppConfig::instance();
     config.load();
