@@ -258,14 +258,40 @@
          <number>12</number>
         </property>
       <item>
-       <widget class="QGroupBox" name="motionGroupBox">
-        <property name="title">
-         <string>电机参数</string>
-        </property>
+       <widget class="QWidget" name="motionPanel">
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <property name="spacing">
           <number>10</number>
          </property>
+         <item>
+          <layout class="QHBoxLayout" name="mSecStatusHead">
+           <property name="spacing">
+            <number>8</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="mSecStatusTitle">
+             <property name="font">
+              <font>
+               <weight>Bold</weight>
+              </font>
+             </property>
+             <property name="text">
+              <string>状态</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QFrame" name="mSecStatusLine">
+             <property name="frameShape">
+              <enum>QFrame::Shape::HLine</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Shadow::Sunken</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
          <item>
          <layout class="QHBoxLayout" name="horizontalLayout_3">
            <property name="spacing">
@@ -309,6 +335,35 @@
               </size>
              </property>
             </spacer>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="mSecPosHead">
+           <property name="spacing">
+            <number>8</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="mSecPosTitle">
+             <property name="font">
+              <font>
+               <weight>Bold</weight>
+              </font>
+             </property>
+             <property name="text">
+              <string>定位</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QFrame" name="mSecPosLine">
+             <property name="frameShape">
+              <enum>QFrame::Shape::HLine</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Shadow::Sunken</enum>
+             </property>
+            </widget>
            </item>
           </layout>
          </item>
@@ -365,6 +420,35 @@
               </size>
              </property>
             </spacer>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="mSecParamHead">
+           <property name="spacing">
+            <number>8</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="mSecParamTitle">
+             <property name="font">
+              <font>
+               <weight>Bold</weight>
+              </font>
+             </property>
+             <property name="text">
+              <string>运动参数</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QFrame" name="mSecParamLine">
+             <property name="frameShape">
+              <enum>QFrame::Shape::HLine</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Shadow::Sunken</enum>
+             </property>
+            </widget>
            </item>
           </layout>
          </item>
@@ -519,7 +603,36 @@
           </layout>
          </item>
          <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_jogstep">
+          <layout class="QHBoxLayout" name="mSecJogHead">
+           <property name="spacing">
+            <number>8</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="mSecJogTitle">
+             <property name="font">
+              <font>
+               <weight>Bold</weight>
+              </font>
+             </property>
+             <property name="text">
+              <string>微调</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QFrame" name="mSecJogLine">
+             <property name="frameShape">
+              <enum>QFrame::Shape::HLine</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Shadow::Sunken</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_jogstep">
            <property name="spacing">
             <number>8</number>
            </property>
@@ -580,14 +693,46 @@
        </widget>
       </item>
       <item>
-       <widget class="QGroupBox" name="logGroupBox">
-        <property name="title">
-         <string>日志</string>
+       <widget class="QWidget" name="logPanel">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <property name="spacing">
           <number>6</number>
          </property>
+         <item>
+          <layout class="QHBoxLayout" name="logHeader">
+           <property name="spacing">
+            <number>8</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="logTitle">
+             <property name="font">
+              <font>
+               <weight>Bold</weight>
+              </font>
+             </property>
+             <property name="text">
+              <string>日志</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QFrame" name="logLine">
+             <property name="frameShape">
+              <enum>QFrame::Shape::HLine</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Shadow::Sunken</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
          <item>
           <widget class="QPlainTextEdit" name="logTextEdit">
            <property name="minimumSize">
@@ -609,7 +754,7 @@
       </item>
      </layout>
       </widget>
-      <widget class="QWidget" name="cameraGroupBox">
+      <widget class="QWidget" name="cameraPanel">
       <layout class="QVBoxLayout" name="cameraLayout">
        <property name="spacing">
         <number>10</number>
@@ -728,6 +873,83 @@
       </layout>
      </widget>
       </widget>
+    </item>
+    <item>
+     <widget class="QWidget" name="statusPanel">
+      <layout class="QHBoxLayout" name="statusPanelLayout">
+       <property name="spacing">
+        <number>12</number>
+       </property>
+       <item>
+        <widget class="QLabel" name="bottomMotorLabel">
+         <property name="text">
+          <string>电机:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="bottomMotorStatusLabel">
+         <property name="text">
+          <string>未连接</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QFrame" name="sSepar1">
+         <property name="frameShape">
+          <enum>QFrame::Shape::VLine</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Shadow::Sunken</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="bottomPositionLabel">
+         <property name="text">
+          <string>位置: 0.0 μm</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QFrame" name="sSepar2">
+         <property name="frameShape">
+          <enum>QFrame::Shape::VLine</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Shadow::Sunken</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="bottomCameraLabel">
+         <property name="text">
+          <string>相机:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="bottomCameraStatusLabel">
+         <property name="text">
+          <string>未连接</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_status">
+         <property name="orientation">
+          <enum>Qt::Orientation::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
     </item>
    </layout>
   </widget>

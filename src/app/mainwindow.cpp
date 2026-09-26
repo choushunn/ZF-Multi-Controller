@@ -253,6 +253,8 @@ void MainWindow::updateDeviceStatus()
         return;
 
     ui->positionLabel->setText(QStringLiteral("%1").arg(motor->positionUm(), 0, 'f', 1));
+    // 底部设备状态行同步实时位置
+    ui->bottomPositionLabel->setText(QStringLiteral("位置: %1 μm").arg(motor->positionUm(), 0, 'f', 1));
 
     static QString lastStatusInfo;
     const QString info = motor->status().describe();
@@ -302,6 +304,11 @@ void MainWindow::onConnectedChanged(bool connected)
         ? QStringLiteral("color: #22A55A;")
         : QStringLiteral("color: #9AA3B0;"));
     ui->connectBtn->setText(connected ? QStringLiteral("断开") : QStringLiteral("连接"));
+    // 底部设备状态行与头部状态同步
+    ui->bottomMotorStatusLabel->setText(connected ? QStringLiteral("已连接") : QStringLiteral("未连接"));
+    ui->bottomMotorStatusLabel->setStyleSheet(connected
+        ? QStringLiteral("color: #22A55A;")
+        : QStringLiteral("color: #9AA3B0;"));
     enableControls(connected);
 }
 
@@ -450,6 +457,11 @@ void MainWindow::onCameraConnectedChanged(bool connected)
     ui->cameraStatusLabel->setText(connected ? QStringLiteral("相机状态: 已连接") : QStringLiteral("相机状态: 未连接"));
     // 状态配色：已连接=绿，未连接=灰
     ui->cameraStatusLabel->setStyleSheet(connected
+        ? QStringLiteral("color: #22A55A;")
+        : QStringLiteral("color: #9AA3B0;"));
+    // 底部设备状态行同步相机状态
+    ui->bottomCameraStatusLabel->setText(connected ? QStringLiteral("已连接") : QStringLiteral("未连接"));
+    ui->bottomCameraStatusLabel->setStyleSheet(connected
         ? QStringLiteral("color: #22A55A;")
         : QStringLiteral("color: #9AA3B0;"));
     enableCameraControls(connected);
