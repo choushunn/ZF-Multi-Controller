@@ -298,13 +298,8 @@ void MainWindow::setupToolTips()
 
 void MainWindow::onConnectedChanged(bool connected)
 {
-    ui->connectionStatusLabel->setText(connected ? QStringLiteral("已连接") : QStringLiteral("未连接"));
-    // 状态配色：已连接=绿，未连接=灰
-    ui->connectionStatusLabel->setStyleSheet(connected
-        ? QStringLiteral("color: #22A55A;")
-        : QStringLiteral("color: #9AA3B0;"));
     ui->connectBtn->setText(connected ? QStringLiteral("断开") : QStringLiteral("连接"));
-    // 底部设备状态行与头部状态同步
+    // 底部设备状态行同步电机连接状态（已连接=绿，未连接=灰）
     ui->bottomMotorStatusLabel->setText(connected ? QStringLiteral("已连接") : QStringLiteral("未连接"));
     ui->bottomMotorStatusLabel->setStyleSheet(connected
         ? QStringLiteral("color: #22A55A;")
